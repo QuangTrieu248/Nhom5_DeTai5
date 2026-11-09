@@ -1,11 +1,15 @@
 from flask import Flask, render_template
 
 app = Flask(__name__)
-   # return render_template('index.html')
+   # return render_template('homepage.html')
 
 @app.route('/')
-def webpage():
-    return render_template('index.html')
+def home_view():
+    return render_template('homepage.html')
+
+@app.route('/trangnhanvien')
+def hienThiTrangNhanVien():
+    return render_template('staffpage.html')
 
 
 if __name__ == '__main__':
