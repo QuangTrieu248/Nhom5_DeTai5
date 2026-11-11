@@ -11,6 +11,9 @@ def home_view():
 def hienThiTrangNhanVien():
     return render_template('staffpage.html')
 
+@app.route('/login')
+def login():
+    return render_template('login.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
