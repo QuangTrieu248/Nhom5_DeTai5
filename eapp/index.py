@@ -16,7 +16,7 @@ def login_view():
     return render_template('login.html')
 
 @app.route('/register')
-def register():
+def register_view():
     return render_template('register.html')
 
 if __name__ == '__main__':

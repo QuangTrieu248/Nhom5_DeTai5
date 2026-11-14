@@ -19,12 +19,12 @@
             <img src="{{ url_for('static', filename='user_account.png') }}" alt="User" width="40" class="rounded-circle">
             <div class="d-flex flex-row align-items-center">
 
-                <a href="/login" class="nav-link py-0 fw-bold" style="color: #006400">Đăng nhập</a>
+                <a href="{{url_for('login_view')}}" class="nav-link py-0 fw-bold" style="color: #006400">Đăng nhập</a>
 
-                <a class="nav-link py-0 fw-bold" style="color: #006400 !important;" href="/register">Đăng ký</a>
+                <a href="{{ url_for('register_view')}}" class="nav-link py-0 fw-bold" style="color: #006400">Đăng ký</a>
 
-                <a href="{{url_for('login_view')}}" class="text-decoration-none">Đăng nhập</a>
-                <a class="nav-link text-white py-0" href="/register">Đăng ký</a>
+{#                <a href="{{url_for('login_view')}}" class="text-decoration-none">Đăng nhập</a>#}
+{#                <a class="text-decoration-none" href="{{ url_for('register_view') }}">Đăng ký</a>#}
             </div>
         </div>
 
