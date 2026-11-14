@@ -1,39 +1,26 @@
 <header>
 <nav class="navbar navbar-expand-sm bg-info">
     <div class="container-fluid">
-        <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}"
-             alt="Logo" width="90" class="ms-3 me-3">
+        <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}" alt="Logo" width="90" class="ms-3 me-3">
         <h3 .text-primary style="color: yellow; font-size:40px ; font-family: 'Times New Roman', Times, serif; padding-right: 50px">PlanePlan</h3>
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">
                 <a class="nav-link active" aria-current="page" href="{{url_for('home_view')}}">Trang chu</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="{{url_for('hienThiTrangNhanVien')}}">Nhan
-                    Vien</a>
+                <a class="nav-link active" aria-current="page" href="{{url_for('staff_view')}}">Nhan Vien</a>
             </li>
             <li class="d-flex">
                 <a class="nav-link active" aria-current="page" href="#">Quan Tri Vien</a>
             </li>
         </ul>
+        <!-- Phần người dùng và đăng nhập... -->
         <div class="ms-auto d-flex flex-column align-items-center">
-
-            <!-- Ảnh người dùng -->
-            <img src="{{ url_for('static', filename='user_account.png') }}"
-                 alt="User"
-                 width="70"
-                 class="rounded-circle">
+            <img src="{{ url_for('static', filename='user_account.png') }}" alt="User" width="40" class="rounded-circle">
             <div class="d-flex flex-row align-items-center">
-
-                <a href="/login" class="text-decoration-none">Đăng nhập</a>
-
-                <a class="nav-link text-white py-0"
-                   href="#">
-                    Đăng ký
-                </a>
-
+                <a href="{{url_for('login_view')}}" class="text-decoration-none">Đăng nhập</a>
+                <a class="nav-link text-white py-0" href="#">Đăng ký</a>
             </div>
-
         </div>
 
     </div>
