@@ -18,7 +18,7 @@ class UserRoleEnum(UserEnum):
 
 class User(BaseModel, UserMixin):
     name = Column(String(50), nullable=False)
-    avatar = Column(String(100), nullable=True)
+    avatar = Column(String(100), default='/static/user_account.png')
     username = Column(String(50), nullable=False, unique=True)
     password = Column(String(100), nullable=False)
     user_role = Column(Enum(UserRoleEnum), default=UserRoleEnum.USER)
