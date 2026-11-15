@@ -11,6 +11,12 @@ def home_view():
 def hienThiTrangNhanVien():
     return render_template('staffpage.html')
 
+@app.route('/register')
+def register():
+    return render_template('register.html')
+
+
+
 @app.route('/login')
 def login():
     return render_template('login.html')
