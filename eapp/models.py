@@ -11,9 +11,9 @@ class BaseModel(db.Model):
 
 
 class UserRoleEnum(UserEnum):
-    ADMIN = 1
-    USER = 2
-    STAFF = 3
+    USER = 1
+    STAFF = 2
+    ADMIN = 3
 
 
 class User(BaseModel, UserMixin):

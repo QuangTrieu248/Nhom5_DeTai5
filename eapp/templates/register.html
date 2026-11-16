@@ -17,7 +17,6 @@
                             <input type="text" class="form-control" id="fullname" name="fullname"
                                    placeholder="Nguyễn Văn A" required>
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="username" class="form-label fw-semibold">Tên đăng nhập</label>
@@ -30,13 +29,18 @@
                                        placeholder="09xxxxxxxx" required>
                             </div>
                         </div>
-
                         <div class="mb-3">
-                            <label for="email" class="form-label fw-semibold">Email</label>
-                            <input type="email" class="form-control" id="email" name="email"
+                            <label for="cccd_real" class="form-label fw-semibold">CCCD</label>
+                            <!-- Ô hiển thị cho người dùng thấy -->
+                            <input type="text" class="form-control" id="cccd_display" maxlength="12" placeholder="Nhập 12 số CCCD" required>
+                            <!-- Ô ẩn lưu số CCCD thật để gửi về server, phần mở rộng thêm thẻ <script để ẩn số cccd nhập vào -->
+                            <input type="hidden" class="form-control" id="cccd_real" name="cccd">
+                        </div>
+                        <div class="mb-3">
+                            <label for="avartar" class="form-label fw-semibold">Avartar</label>
+                            <input type="file" class="form-control" id="avartar" name="avarta"
                                    placeholder="name@example.com" required>
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="password" class="form-label fw-semibold">Mật khẩu</label>
@@ -49,7 +53,6 @@
                                        placeholder="Nhập lại mật khẩu..." required>
                             </div>
                         </div>
-
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                             Đăng ký
                         </button>
