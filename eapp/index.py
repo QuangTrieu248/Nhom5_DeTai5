@@ -11,11 +11,9 @@ def home_view():
 def staff_view():
     return render_template('staffpage.html')
 
-@app.route('/register')
-def register():
-    return render_template('register.html')
-
-
+@app.route ('/search')
+def search():
+    return render_template('search.html')
 
 @app.route('/login')
 def login_view():
