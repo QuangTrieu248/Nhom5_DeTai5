@@ -12,7 +12,7 @@ def staff_view():
 
 @app.route('/search')
 def search():
-    return render_template('search.html')
+    return render_template('homepage.html')
 
 @app.route('/register')
 def register_view():
@@ -24,3 +24,5 @@ def login_view():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+    
