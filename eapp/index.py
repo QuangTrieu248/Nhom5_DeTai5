@@ -1,4 +1,6 @@
 from flask import Flask, render_template
+from eapp import app, dao
+
 
 app = Flask(__name__)
 
@@ -10,8 +12,17 @@ def home_view():
 def staff_view():
     return render_template('staffpage.html')
 
+# @app.route('/flightpage')
+# def flight_page_view():
+#     airport = dao.load_airport()
+#     return render_template('flightpage.html', airport=airport)
+@app.route('/flightpage')
+def flight_page_view():
+    airplane = dao.count_airplane()
+    return render_template('flightpage.html', airplane=airplane)
+
 @app.route('/search')
-def search():
+def flight_search():
     return render_template('homepage.html')
 
 @app.route('/register')
