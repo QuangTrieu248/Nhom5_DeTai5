@@ -11,7 +11,7 @@
                     <h2 class="text-center fw-bold mb-2">Đăng nhập</h2>
                     <p class="text-center text-muted mb-4">Chào mừng bạn quay trở lại với PlanePlan</p>
 
-                    <form method="POST" action="{{ url_for('login_view') }}">
+                    <form method="POST" > #action="{{ url_for('login_view') }}"
                         <div class="mb-3">
                             <label for="username" class="form-label fw-semibold">Tên đăng nhập</label>
                             <input type="text" class="form-control" id="username" name="username"
@@ -27,8 +27,8 @@
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                             Đăng nhập
                         </button>
-                    </form>
 
+                    </form>
                     <hr class="my-4">
                     <p class="text-center mb-0 text-muted">
                         Chưa có tài khoản?

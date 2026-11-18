@@ -11,7 +11,7 @@
                     <h2 class="text-center fw-bold mb-2">Tìm kiếm chuyến bay đi</h2>
                     <p class="text-center text-muted mb-4">Chào mừng bạn quay trở lại với PlanePlan</p>
 
-                    <form method="POST" action="{{ url_for('login_view') }}">
+                    <form method="POST" action="{{ url_for('flight_page_view') }}">
                         <div class="mb-3">
                             <label for="noi_di" class="form-label fw-semibold">Nhập sân bay đi</label>
                             <input type="text" class="form-control" id="noi_di" name="noi_di"
@@ -25,14 +25,17 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="time" class="form-label fw-semibold">Thời gian đi</label>
-                            <input type="time" class="form-control" id="time" name="time"
-                                   placeholder="Chọn thời gian đi" required>
+                            <label for="dayGo" class="form-label fw-semibold">Ngày đi</label>
+                            <input type="date" class="form-control" id="dayGo" name="dayGo" required>
+                            <label for="dayBack" class="form-label fw-semibold">Ngày về</label>
+                            <input type="date" class="form-control" id="dayBack" name="dayBack" required>
                         </div>
+
 
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                             Tìm kiếm
                         </button>
+                    <a href="/flightpage">chuyen bay</a>
                     </form>
                     
                 </div>

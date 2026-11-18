@@ -14,7 +14,7 @@
                 <a class="nav-link active text-white fw-semibold" aria-current="page" href="#">Quản trị viên</a>
             </li>
             <li class="d-flex">
-                <a class="btn btn-outline-primary text-white btn-sm fw-semibold" aria-current="page" href="{{url_for('search')}}">Tìm kiếm chuyến bay</a>
+                <a class="btn btn-outline-primary text-white btn-sm fw-semibold" aria-current="page" href="{{url_for('flight_search')}}">Tìm kiếm chuyến bay</a>
             </li>
         </ul>
         <!-- Phần người dùng và đăng nhập... -->
@@ -22,10 +22,10 @@
             <!-- Ảnh người dùng -->
             <img src="{{ url_for('static', filename='user_account.png') }}"
                  alt="User"
-                 width="70"
+                 width="45"
                  class="rounded-circle">
             <div class="d-flex align-items-center justify-content-center gap-2">
-                <a href="{{ url_for('login_view') }}" class="btn btn-primary text-white btn-sm fw-semibold">Đăng nhập</a>
+                <a href="{{ url_for('login_view') }}" class="btn btn-primary text-white btn-sm fw-semibold" >Đăng nhập</a>
                 <a href="{{ url_for('register_view') }}" class="btn btn-primary text-white btn-sm fw-semibold">Đăng ký</a>
             </div>
         </div>
