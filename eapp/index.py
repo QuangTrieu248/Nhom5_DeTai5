@@ -1,8 +1,5 @@
-from flask import Flask, render_template
+from flask import render_template
 from eapp import app, dao
-
-
-app = Flask(__name__)
 
 @app.route('/')
 def home_view():
