@@ -12,6 +12,22 @@
                     <p class="text-center text-muted mb-4">Chào mừng bạn quay trở lại với PlanePlan</p>
 
                     <form method="POST" action="{{ url_for('login_view') }}">
+                        <!-- Nút chọn loại vé: Một chiều / Khứ hồi -->
+                        <div class="mb-3 d-flex justify-content-center gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="loai_ve" id="mot_chieu" value="mot_chieu" checked>
+                                <label class="form-check-label fw-semibold" for="mot_chieu">
+                                    Một chiều
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="loai_ve" id="khu_hoi" value="khu_hoi">
+                                <label class="form-check-label fw-semibold" for="khu_hoi">
+                                    Khứ hồi
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label for="noi_di" class="form-label fw-semibold">Nhập sân bay đi</label>
                             <input type="text" class="form-control" id="noi_di" name="noi_di"
@@ -24,13 +40,20 @@
                                    placeholder="Nhập sân bay đến..." required>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="time" class="form-label fw-semibold">Thời gian đi</label>
                             <input type="time" class="form-control" id="time" name="time"
                                    placeholder="Chọn thời gian đi" required>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <!-- Ô chọn thời gian về (Mặc định ẩn bằng class d-none) -->
+                        <div class="mb-4 d-none" id="khu_hoi_container">
+                            <label for="time_ve" class="form-label fw-semibold">Thời gian về</label>
+                            <input type="time" class="form-control" id="time_ve" name="time_ve"
+                                   placeholder="Chọn thời gian về">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-2">
                             Tìm kiếm
                         </button>
                     </form>
@@ -40,4 +63,28 @@
         </div>
     </div>
 </div>
+
+<!-- JavaScript xử lý ẩn/hiện ô Thời gian về -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const motChieuRadio = document.getElementById("mot_chieu");
+        const khuHoiRadio = document.getElementById("khu_hoi");
+        const khuHoiContainer = document.getElementById("khu_hoi_container");
+        const timeVeInput = document.getElementById("time_ve");
+
+        function toggleKhuHoi() {
+            if (khuHoiRadio.checked) {
+                khuHoiContainer.classList.remove("d-none"); // Hiện ô thời gian về
+                timeVeInput.setAttribute("required", "required"); // Bắt buộc nhập khi chọn khứ hồi
+            } else {
+                khuHoiContainer.classList.add("d-none"); // Ẩn ô thời gian về
+                timeVeInput.removeAttribute("required"); // Bỏ bắt buộc nhập
+                timeVeInput.value = ""; // Xóa dữ liệu cũ nếu có
+            }
+        }
+
+        motChieuRadio.addEventListener("change", toggleKhuHoi);
+        khuHoiRadio.addEventListener("change", toggleKhuHoi);
+    });
+</script>
 {% endblock %}
