@@ -15,7 +15,7 @@
                     <div class="alert alert-danger">{{ err_msg }}</div>
                     {% endif %}
 
-                    <form enctype="multipart/form-data" method="POST" action="{{ url_for('register_view') }}">
+                    <form enctype="multipart/form-data" method="post" action="{{ url_for('register_view') }}">
                         <div class="mb-3">
                             <label for="fullname" class="form-label fw-semibold">Họ và tên</label>
                             <input type="text" class="form-control" id="fullname" name="fullname"
@@ -34,8 +34,8 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="avartar" class="form-label fw-semibold">Avartar</label>
-                            <input type="file" class="form-control" id="avartar" name="avarta" accept="image/*">
+                            <label for="avatar" class="form-label fw-semibold">Avatar</label>
+                            <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">

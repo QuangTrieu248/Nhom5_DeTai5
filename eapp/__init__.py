@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from urllib.parse import quote
+import cloudinary
 
 app = Flask(__name__)
 
@@ -9,3 +10,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:%s@localhost/plane
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(app=app)
+
+cloudinary.config(
+    cloud_name='x2rmkazr',
+    api_key='844616215888457',
+    api_secret='S4PRbCucYfUF9-LBEkL5blSbS6Q'
+)
