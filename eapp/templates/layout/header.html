@@ -1,35 +1,54 @@
 <header>
-<nav class="navbar navbar-expand-sm bg-info">
-    <div class="container-fluid">
-        <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}" alt="Logo" width="90" class="ms-3 me-3">
-        <h3 .text-primary style="color: yellow; font-size:40px ; font-family: 'Times New Roman', Times, serif; padding-right: 50px">PlanePlan</h3>
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-                <a class="nav-link active text-white fw-semibold" aria-current="page" href="{{url_for('home_view')}}">Trang chủ</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active text-white fw-semibold" aria-current="page" href="{{url_for('staff_view')}}">Nhân viên</a>
-            </li>
-            <li class="d-flex">
-                <a class="nav-link active text-white fw-semibold" aria-current="page" href="#">Quản trị viên</a>
-            </li>
-            <li class="d-flex">
-                <a class="btn btn-outline-primary text-white btn-sm fw-semibold" aria-current="page" href="{{url_for('flight_search')}}">Tìm kiếm chuyến bay</a>
-            </li>
-        </ul>
-        <!-- Phần người dùng và đăng nhập... -->
-        <div class="ms-auto d-flex flex-column align-items-center">
-            <!-- Ảnh người dùng -->
-            <img src="{{ url_for('static', filename='user_account.png') }}"
-                 alt="User"
-                 width="45"
-                 class="rounded-circle">
-            <div class="d-flex align-items-center justify-content-center gap-2">
-                <a href="{{ url_for('login_view') }}" class="btn btn-primary text-white btn-sm fw-semibold" >Đăng nhập</a>
-                <a href="{{ url_for('register_view') }}" class="btn btn-primary text-white btn-sm fw-semibold">Đăng ký</a>
+    <nav class="navbar navbar-expand-sm bg-info">
+        <div class="container-fluid">
+            <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}" alt="Logo" width="90"
+                 class="ms-3 me-3">
+            <h3
+                style="color: yellow; font-size:40px ; font-family: 'Times New Roman', Times, serif; padding-right: 50px">
+                PlanePlan</h3>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link active text-white fw-semibold" aria-current="page"
+                       href="{{ url_for('home_view') }}">Trang chủ</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active text-white fw-semibold" aria-current="page"
+                       href="{{ url_for('staff_view') }}">Nhân viên</a>
+                </li>
+                <li class="d-flex">
+                    <a class="nav-link active text-white fw-semibold" aria-current="page" href="#">Quản trị viên</a>
+                </li>
+                <li class="d-flex">
+                    <a class="btn btn-outline-primary text-white btn-sm fw-semibold" aria-current="page"
+                       href="{{ url_for('flight_search') }}">Tìm kiếm chuyến bay</a>
+                </li>
+            </ul>
+            <!-- Phần người dùng và đăng nhập... -->
+            <div class="ms-auto d-flex flex-column align-items-center">
+                {% if current_user.is_authenticated %}
+                    <img src="{{ current_user.avatar or url_for('static', filename='user_account.png') }}"
+                         alt="User"
+                         width="45"
+                         height="45"
+                         style="object-fit: cover;"
+                         class="rounded-circle mb-1">
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                        <span class="text-white fw-semibold small">{{ current_user.name }}</span>
+                        <a href="{{ url_for('logout_process') }}" class="btn btn-danger text-white btn-sm fw-semibold">Đăng xuất</a>
+                    </div>
+                {% else %}
+                    <img src="{{ url_for('static', filename='user_account.png') }}"
+                         alt="User"
+                         width="45"
+                         height="45"
+                         class="rounded-circle mb-1">
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                        <a href="{{ url_for('login_view') }}" class="btn btn-primary text-white btn-sm fw-semibold">Đăng nhập</a>
+                        <a href="{{ url_for('register_view') }}" class="btn btn-primary text-white btn-sm fw-semibold">Đăng ký</a>
+                    </div>
+                {% endif %}
             </div>
-        </div>
 
-    </div>
-</nav>
+        </div>
+    </nav>
 </header>
