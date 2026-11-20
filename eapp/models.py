@@ -24,14 +24,24 @@ class UserRole(UserEnum):
 
 class User(BaseModel, UserMixin):
     name = Column(String(50), nullable=False)
-    avatar = Column(String(100), default='/static/user_account.png')
+    avatar = Column(String(255), default='/static/user_account.png')
     username = Column(String(50), nullable=False, unique=True)
+    phone_numbers = relationship('PhoneNumber', backref='user', lazy=True)
     password = Column(String(100), nullable=False)
     user_role = Column(Enum(UserRole), default=UserRole.USER)
 
     def __str__(self):
         return self.name
 
+
+class PhoneNumber(BaseModel):
+    __tablename__ = 'phone_number'
+
+    number = Column(String(15), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey(User.id), nullable=False)
+
+    def __str__(self):
+        return self.number
 
 # PHẦN CHUYẾN BAY
 class AirportRole(AirEnum):
