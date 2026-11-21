@@ -8,8 +8,6 @@ from flask_login import LoginManager
 app = Flask(__name__)
 app.secret_key = 'planeplan_secret_key_nhom5'
 
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:%s@localhost/planeplandb?charset=utf8mb4' % quote('123456')
 #db local nen muon connect thi doi quote dong tren theo mk db trong may cua minh nha
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:%s@localhost/planeplandb?charset=utf8mb4' % quote('123456')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True

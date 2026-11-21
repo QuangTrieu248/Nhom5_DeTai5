@@ -1,4 +1,4 @@
-from eapp.models import Airport, Airplane, User, PhoneNumber, db
+from eapp.models import Airport, Airplane, User, db
 import cloudinary.uploader
 import hashlib
 
@@ -24,7 +24,7 @@ def get_user_by_username(username):
 def get_phone_number(phone):
     if not phone:
         return None
-    return PhoneNumber.query.filter(PhoneNumber.number.__eq__(phone.strip())).first()
+    return User.query.filter(User.phone.__eq__(phone.strip())).first()
 
 
 def check_login(username, password):
@@ -42,6 +42,7 @@ def add_user(name, username, password, phone=None, avatar=None):
     u = User(
         name=name.strip(),
         username=username.strip(),
+        phone=phone.strip() if phone else None,
         password=password
     )
     if avatar and avatar.filename != '':
@@ -49,12 +50,4 @@ def add_user(name, username, password, phone=None, avatar=None):
         u.avatar = res.get('secure_url')
 
     db.session.add(u)
-
-    if phone:
-        p = PhoneNumber(number=phone.strip(), user=u)
-        db.session.add(p)
-
-def get_user_by_id(user_id):
-    return User.query.get(int(user_id))
-
     db.session.commit()
