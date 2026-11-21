@@ -19,56 +19,24 @@
         <th>Giá vé</th>
     </tr>
     </thead>
-    <tbody>
+<tbody>
+{% if flight_ticket %}
+  {% for f in flight_ticket %}
+   <tr>
+     <td>{{ f.airline_name }}</td>
+     <td>{{ f.flight_code }}</td>
+     <td>{{ f.departure_time }}</td>
+     <td>{{ f.arrival_time }}</td>
+     <td>{{ f.base_price }} VNĐ</td>
+   </tr>
+  {% endfor %}
+{% else %}
     <tr>
-        <td>VJ</td>
-        <td>vj302</td>
-        <td> 14</td>
-        <td>21</td>
-        <td>2.5jack</td>
-        <td>
-            <button class="btn btn-warning">Mua vé</button>
-        </td>
+        <td colspan="5">Không có dữ liệu chuyến bay nào.</td>
     </tr>
-        <tr>
-        <td>VJ</td>
-        <td>vj302</td>
-        <td> 14</td>
-        <td>21</td>
-        <td>2.5jack</td>
-        <td>
-            <button class="btn btn-warning">Mua vé</button>
-        </td>
-    </tr>
-        <tr>
-        <td>VJ</td>
-        <td>vj302</td>
-        <td> 14</td>
-        <td>21</td>
-        <td>2.5jack</td>
-        <td>
-            <button class="btn btn-warning">Mua vé</button>
-        </td>
-    </tr>
-    </tbody>
+{% endif %}
+</tbody>
 </table>
-
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>San bay</th>
-        <th>dia chi</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for a in airplane %}
-    <tr>
-        <td>{{a.airline_name}}</td>
-        <td>{{a.number_seat}}</td>
-    </tr>
-    {% endfor %}
-
-    </tbody>
-</table>
-
 {% endblock %}
+
+

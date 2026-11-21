@@ -1,0 +1,47 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}staff{% endblock %}
+
+{% block content %}
+<h1 align="center">Bán vé tại quầy</h1>
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="text-center fw-bold mb-2">Tìm kiếm chuyến bay đi</h2>
+                    <p class="text-center text-muted mb-4">Chào mừng bạn quay trở lại với PlanePlan</p>
+
+                    <form method="POST" action="{{ url_for('flight_page_view') }}">
+                        <div class="mb-3">
+                            <label for="noi_di" class="form-label fw-semibold">Nhập sân bay đi</label>
+                            <input type="text" class="form-control" id="noi_di" name="noi_di"
+                                   placeholder="Nhập sân bay đi..." required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="noi_den" class="form-label fw-semibold">Nhập sân bay đến</label>
+                            <input type="text" class="form-control" id="noi_den" name="noi_den"
+                                   placeholder="Nhập sân bay đến..." required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="dayGo" class="form-label fw-semibold">Ngày đi</label>
+                            <input type="date" class="form-control" id="dayGo" name="dayGo" required>
+                            <label for="dayBack" class="form-label fw-semibold">Ngày về</label>
+                            <input type="date" class="form-control" id="dayBack" name="dayBack" required>
+                        </div>
+
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            Tìm kiếm
+                        </button>
+                    <a href="/flightpage">chuyen bay</a>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

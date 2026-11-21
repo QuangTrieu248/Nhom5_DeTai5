@@ -1,0 +1,98 @@
+{% extends 'layout/base.html' %}
+
+
+{% block title %}Fight select{% endblock %}
+
+{% block content %}
+<div class="alert alert-info" >
+    <h4>Chuyến bay: VD( Hà Nội --> Hồ Chí Minh)</h4>
+    <h4>Ngày đi: VD(24/12/2026)</h4>
+</div>
+<div class="alert alert-info" >
+    <h6>Hãng bay: VD( VNAIRLINE)</h6>
+    <h6>Thời gian đi: VD(24/12/2026)</h6>
+    <h6>Thời gian đến: VD(24/12/2026)</h6>
+</div>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <!-- Tăng độ rộng khung chứa lên col-lg-10 để 2 form không bị chật -->
+        <div class="col-12 col-lg-10">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4 p-md-5">
+                    <p class="text-center text-muted mb-4">Chào mừng bạn quay trở lại với PlanePlan</p>
+
+                    <!-- Tạo hàng chứa 2 form, g-4 tạo khoảng cách đều giữa 2 cột -->
+                    <div class="row g-4">
+
+                        <!-- FORM 1 (Cột trái) -->
+
+                        <div class="col-12 col-md-6">
+                            <h4 class="text-center fw-bold mb-2">Chọn ghế chuyến bay đi</h4>
+                            <form method="POST" action="{{ url_for('flight_page_view') }}">
+                                <div class="mb-3">
+                                    <label for="noi_di_1" class="form-label fw-semibold">Nhập sân bay đi</label>
+                                    <input type="text" class="form-control" id="noi_di_1" name="noi_di" placeholder="Nhập sân bay đi..." required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="noi_den_1" class="form-label fw-semibold">Nhập sân bay đến</label>
+                                    <input type="text" class="form-control" id="noi_den_1" name="noi_den" placeholder="Nhập sân bay đến..." required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="dayGo_1" class="form-label fw-semibold">Ngày đi</label>
+                                    <input type="date" class="form-control mb-3" id="dayGo_1" name="dayGo" required>
+
+                                    <label for="dayBack_1" class="form-label fw-semibold">Ngày về</label>
+                                    <input type="date" class="form-control" id="dayBack_1" name="dayBack" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mb-2">
+                                    Tìm kiếm
+                                </button>
+                                <div class="text-center">
+                                    <a href="/flightpage">chuyen bay</a>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- FORM 2 (Cột phải) -->
+
+                        <div class="col-12 col-md-6">
+                            <h4 class="text-center fw-bold mb-2">Nhập thông tin cá nhân</h4>
+                            <form method="POST" action="{{ url_for('flight_page_view') }}">
+                                <div class="mb-3">
+                                    <label for="noi_di_2" class="form-label fw-semibold">Nhập sân bay đi</label>
+                                    <input type="text" class="form-control" id="noi_di_2" name="noi_di" placeholder="Nhập sân bay đi..." required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="noi_den_2" class="form-label fw-semibold">Nhập sân bay đến</label>
+                                    <input type="text" class="form-control" id="noi_den_2" name="noi_den" placeholder="Nhập sân bay đến..." required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="dayGo_2" class="form-label fw-semibold">Ngày đi</label>
+                                    <input type="date" class="form-control mb-3" id="dayGo_2" name="dayGo" required>
+
+                                    <label for="dayBack_2" class="form-label fw-semibold">Ngày về</label>
+                                    <input type="date" class="form-control" id="dayBack_2" name="dayBack" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mb-2">
+                                    Tìm kiếm
+                                </button>
+                                <div class="text-center">
+                                    <a href="/flightpage">chuyen bay</a>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div> <!-- Kết thúc row chứa 2 form -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</tbody>
+</table>
+{% endblock %}
+
+
