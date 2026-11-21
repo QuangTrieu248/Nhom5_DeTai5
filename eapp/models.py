@@ -1,10 +1,9 @@
 import datetime
 # from xmlrpc.client import DateTime
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String,Enum, ForeignKey, CheckConstraint, DateTime
-# from datetime import datetime
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey
 from sqlalchemy.orm import relationship
-from eapp import db,app
+from eapp import db
 from enum import Enum as UserEnum
 from enum import Enum as AirEnum
 
@@ -28,7 +27,28 @@ class User(BaseModel, UserMixin):
     username = Column(String(50), nullable=False, unique=True)
     phone_numbers = relationship('PhoneNumber', backref='user', lazy=True)
     password = Column(String(100), nullable=False)
-    user_role = Column(Enum(UserRole), default=UserRole.USER)
+    user_role = Column(Enum(UserRoleEnum), default=UserRoleEnum.USER)
+    phones = relationship('PhoneNumber', backref='user', lazy=True)
+
+    def __str__(self):
+        return self.name
+
+
+class PhoneNumber(BaseModel):
+    number = Column(String(20), nullable=False)
+    user_id = Column(Integer, ForeignKey(User.id), nullable=False)
+
+
+class Airport(BaseModel):
+    name = Column(String(100), nullable=False)
+    address = Column(String(255), nullable=False)
+
+    def __str__(self):
+        return self.name
+
+
+class Airplane(BaseModel):
+    name = Column(String(100), nullable=False)
 
     def __str__(self):
         return self.name

@@ -12,54 +12,80 @@
                     <p class="text-center text-muted mb-4">Chào mừng bạn quay trở lại với PlanePlan</p>
 
                     <form method="POST" action="{{ url_for('flight_page_view') }}">
+                        <!-- Nút chọn loại vé: Một chiều / Khứ hồi -->
+                        <div class="mb-3 d-flex justify-content-center gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="loai_ve" id="mot_chieu" value="mot_chieu" checked>
+                                <label class="form-check-label fw-semibold" for="mot_chieu">
+                                    Một chiều
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="loai_ve" id="khu_hoi" value="khu_hoi">
+                                <label class="form-check-label fw-semibold" for="khu_hoi">
+                                    Khứ hồi
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
-                            <label for="noi_di" class="form-label fw-semibold">Nhập sân bay đi</label>
-                            <input type="text" class="form-control" id="noi_di" name="noi_di"
-                                   placeholder="Nhập sân bay đi..." required>
+                            <label for="noi_di" class="form-label fw-semibold">Chọn sân bay đi</label>
+                            <select class="form-select" id="noi_di" name="noi_di" required>
+                                <option value="" selected disabled>-- Chọn sân bay đi --</option>
+                                {% for a in airports %}
+                                <option value="{{ a.id }}">{{ a.name }} ({{ a.address }})</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="noi_den" class="form-label fw-semibold">Nhập sân bay đến</label>
-                            <input type="text" class="form-control" id="noi_den" name="noi_den"
-                                   placeholder="Nhập sân bay đến..." required>
+                            <label for="noi_den" class="form-label fw-semibold">Chọn sân bay đến</label>
+                            <select class="form-select" id="noi_den" name="noi_den" required>
+                                <option value="" selected disabled>-- Chọn sân bay đến --</option>
+                                {% for a in airports %}
+                                <option value="{{ a.id }}">{{ a.name }} ({{ a.address }})</option>
+                                {% endfor %}
+                            </select>
                         </div>
 
                         <div class="mb-4">
                             <label for="dayGo" class="form-label fw-semibold">Ngày đi</label>
                             <input type="date" class="form-control" id="dayGo" name="dayGo" required>
-                            <label for="dayBack" class="form-label fw-semibold">Ngày về</label>
-                            <input type="date" class="form-control" id="dayBack" name="dayBack" required>
+                            
+                            <!-- Mặc định ẩn (d-none) vì đang chọn Một chiều -->
+                            <div id="khu_hoi_container" class="mt-3 d-none">
+                                <label for="dayBack" class="form-label fw-semibold">Ngày về</label>
+                                <input type="date" class="form-control" id="dayBack" name="dayBack">
+                            </div>
                         </div>
-
 
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                             Tìm kiếm
                         </button>
-                    <a href="/flightpage">chuyen bay</a>
+                        <a href="/flightpage">chuyen bay</a>
                     </form>
-                    
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript xử lý ẩn/hiện ô Thời gian về -->
+<!-- JavaScript xử lý ẩn/hiện ô Ngày về -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const motChieuRadio = document.getElementById("mot_chieu");
         const khuHoiRadio = document.getElementById("khu_hoi");
         const khuHoiContainer = document.getElementById("khu_hoi_container");
-        const timeVeInput = document.getElementById("time_ve");
+        const dayBackInput = document.getElementById("dayBack");
 
         function toggleKhuHoi() {
             if (khuHoiRadio.checked) {
-                khuHoiContainer.classList.remove("d-none"); // Hiện ô thời gian về
-                timeVeInput.setAttribute("required", "required"); // Bắt buộc nhập khi chọn khứ hồi
+                khuHoiContainer.classList.remove("d-none");
+                dayBackInput.setAttribute("required", "required");
             } else {
-                khuHoiContainer.classList.add("d-none"); // Ẩn ô thời gian về
-                timeVeInput.removeAttribute("required"); // Bỏ bắt buộc nhập
-                timeVeInput.value = ""; // Xóa dữ liệu cũ nếu có
+                khuHoiContainer.classList.add("d-none");
+                dayBackInput.removeAttribute("required");
+                dayBackInput.value = "";
             }
         }
 
