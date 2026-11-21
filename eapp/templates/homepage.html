@@ -11,23 +11,7 @@
                     <h2 class="text-center fw-bold mb-2">Tìm kiếm chuyến bay đi</h2>
                     <p class="text-center text-muted mb-4">Chào mừng bạn quay trở lại với PlanePlan</p>
 
-                    <form method="POST" action="{{ url_for('login_view') }}">
-                        <!-- Nút chọn loại vé: Một chiều / Khứ hồi -->
-                        <div class="mb-3 d-flex justify-content-center gap-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="loai_ve" id="mot_chieu" value="mot_chieu" checked>
-                                <label class="form-check-label fw-semibold" for="mot_chieu">
-                                    Một chiều
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="loai_ve" id="khu_hoi" value="khu_hoi">
-                                <label class="form-check-label fw-semibold" for="khu_hoi">
-                                    Khứ hồi
-                                </label>
-                            </div>
-                        </div>
-
+                    <form method="POST" action="{{ url_for('flight_page_view') }}">
                         <div class="mb-3">
                             <label for="noi_di" class="form-label fw-semibold">Nhập sân bay đi</label>
                             <input type="text" class="form-control" id="noi_di" name="noi_di"
@@ -40,22 +24,18 @@
                                    placeholder="Nhập sân bay đến..." required>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="time" class="form-label fw-semibold">Thời gian đi</label>
-                            <input type="time" class="form-control" id="time" name="time"
-                                   placeholder="Chọn thời gian đi" required>
+                        <div class="mb-4">
+                            <label for="dayGo" class="form-label fw-semibold">Ngày đi</label>
+                            <input type="date" class="form-control" id="dayGo" name="dayGo" required>
+                            <label for="dayBack" class="form-label fw-semibold">Ngày về</label>
+                            <input type="date" class="form-control" id="dayBack" name="dayBack" required>
                         </div>
 
-                        <!-- Ô chọn thời gian về (Mặc định ẩn bằng class d-none) -->
-                        <div class="mb-4 d-none" id="khu_hoi_container">
-                            <label for="time_ve" class="form-label fw-semibold">Thời gian về</label>
-                            <input type="time" class="form-control" id="time_ve" name="time_ve"
-                                   placeholder="Chọn thời gian về">
-                        </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-2">
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                             Tìm kiếm
                         </button>
+                    <a href="/flightpage">chuyen bay</a>
                     </form>
                     
                 </div>

@@ -11,13 +11,16 @@
                     <h2 class="text-center fw-bold mb-2">Tạo tài khoản mới</h2>
                     <p class="text-center text-muted mb-4">Đăng ký thành viên để đặt vé cùng PlanePlan</p>
 
-                    <form method="POST" action="{{ url_for('register_view') }}">
+                    {% if err_msg %}
+                    <div class="alert alert-danger">{{ err_msg }}</div>
+                    {% endif %}
+
+                    <form enctype="multipart/form-data" method="post" action="{{ url_for('register_view') }}">
                         <div class="mb-3">
                             <label for="fullname" class="form-label fw-semibold">Họ và tên</label>
                             <input type="text" class="form-control" id="fullname" name="fullname"
                                    placeholder="Nguyễn Văn A" required>
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="username" class="form-label fw-semibold">Tên đăng nhập</label>
@@ -30,13 +33,10 @@
                                        placeholder="09xxxxxxxx" required>
                             </div>
                         </div>
-
                         <div class="mb-3">
-                            <label for="email" class="form-label fw-semibold">Email</label>
-                            <input type="email" class="form-control" id="email" name="email"
-                                   placeholder="name@example.com" required>
+                            <label for="avatar" class="form-label fw-semibold">Avatar</label>
+                            <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="password" class="form-label fw-semibold">Mật khẩu</label>
@@ -49,7 +49,6 @@
                                        placeholder="Nhập lại mật khẩu..." required>
                             </div>
                         </div>
-
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                             Đăng ký
                         </button>
