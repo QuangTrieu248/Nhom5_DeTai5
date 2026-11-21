@@ -1,11 +1,10 @@
 import datetime
-# from xmlrpc.client import DateTime
-from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey
-from sqlalchemy.orm import relationship
-from eapp import db
 from enum import Enum as UserEnum
 from enum import Enum as AirEnum
+from flask_login import UserMixin
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, DateTime, CheckConstraint
+from sqlalchemy.orm import relationship
+from eapp import db, app
 
 
 class BaseModel(db.Model):
@@ -25,30 +24,9 @@ class User(BaseModel, UserMixin):
     name = Column(String(50), nullable=False)
     avatar = Column(String(255), default='/static/user_account.png')
     username = Column(String(50), nullable=False, unique=True)
-    phone_numbers = relationship('PhoneNumber', backref='user', lazy=True)
     password = Column(String(100), nullable=False)
-    user_role = Column(Enum(UserRoleEnum), default=UserRoleEnum.USER)
-    phones = relationship('PhoneNumber', backref='user', lazy=True)
-
-    def __str__(self):
-        return self.name
-
-
-class PhoneNumber(BaseModel):
-    number = Column(String(20), nullable=False)
-    user_id = Column(Integer, ForeignKey(User.id), nullable=False)
-
-
-class Airport(BaseModel):
-    name = Column(String(100), nullable=False)
-    address = Column(String(255), nullable=False)
-
-    def __str__(self):
-        return self.name
-
-
-class Airplane(BaseModel):
-    name = Column(String(100), nullable=False)
+    user_role = Column(Enum(UserRole), default=UserRole.USER)
+    phone_numbers = relationship('PhoneNumber', backref='user', lazy=True)
 
     def __str__(self):
         return self.name
@@ -63,6 +41,7 @@ class PhoneNumber(BaseModel):
     def __str__(self):
         return self.number
 
+
 # PHẦN CHUYẾN BAY
 class AirportRole(AirEnum):
     DEPARTURE = 1
@@ -73,11 +52,17 @@ class Airport(BaseModel):
     name = Column(String(100), nullable=False)
     address = Column(String(500), nullable=False)
 
+    def __str__(self):
+        return self.name
+
 
 class Airplane(BaseModel):
     airline_name = Column(String(100), nullable=False)
     number_seat = Column(Integer, nullable=False)
     segments_relation = relationship('FlightSegment', backref='airplane', lazy=True)
+
+    def __str__(self):
+        return self.airline_name
 
 
 class FlightRoute(BaseModel):
@@ -105,13 +90,11 @@ class FlightSegment(BaseModel):
 
     flight_id = Column(Integer, ForeignKey(Flight.id), nullable=False)
     airplane_id = Column(Integer, ForeignKey(Airplane.id), nullable=False)
-    # Có thể thêm airplane_relation ?
     airport_relation = relationship('AirportFlightSegment', backref='flight_segment', lazy=True)
 
     __table_args__ = (
         CheckConstraint('departure_time < arrival_time', name='check_segment_time'),
         CheckConstraint('sequence > 0', name='check_sequence_positive'),
-        # UniqueConstraint('flight_id', 'sequence', name='uix_flight_sequence')  # Sequence duy nhất theo từng chuyến bay?
     )
 
 
@@ -122,9 +105,10 @@ class AirportFlightSegment(BaseModel):
 
 
 if __name__ == '__main__':
-      with app.app_context():
+    with app.app_context():
         db.drop_all()
         db.create_all()
+
         # 1. Tạo dữ liệu Sân bay, Máy bay và Tuyến bay
         sgn = Airport(name='Sân bay Quốc tế Tân Sơn Nhất', address='Trường Sơn, Tân Bình, TP.HCM')
         tpe = Airport(name='Sân bay Quốc tế Đào Viên', address='Đào Viên, Đài Loan')
@@ -136,7 +120,7 @@ if __name__ == '__main__':
         route1 = FlightRoute(name='TP.HCM - Tokyo (Quá cảnh Đài Bắc)')
 
         db.session.add_all([sgn, tpe, nrt, plane1, plane2, route1])
-        db.session.flush()  # Đẩy dữ liệu tạm để lấy ID cho các bảng trung gian
+        db.session.flush()
 
         # 2. Gắn sân bay đầu - cuối cho Tuyến bay
         route_dep = AirportFlightRoute(role=AirportRole.DEPARTURE, airport_id=sgn.id, flight_route_id=route1.id)
@@ -174,14 +158,3 @@ if __name__ == '__main__':
 
         db.session.add_all([seg1_dep, seg1_arr, seg2_dep, seg2_arr])
         db.session.commit()
-
-        # # 6. Truy vấn thử để kiểm tra quan hệ (backref)
-        # f = Flight.query.filter_by(flight_code='VN300').first()
-        # print(f"Chuyến bay: {f.flight_code} | Tuyến: {f.flight_route.name}")
-        # for s in f.segments_details:
-        #     print(
-        #         f" - Chặng {s.sequence}: {s.departure_time} "
-        #         f"-> {s.arrival_time} | Máy bay: {s.airplane.airline_name} ({s.airplane.number_seat} ghế)")
-        #
-        # db.session.add()
-        # db.session.commit()
