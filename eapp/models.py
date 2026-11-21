@@ -2,7 +2,7 @@ import datetime
 from enum import Enum as UserEnum
 from enum import Enum as AirEnum
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, DateTime, CheckConstraint
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, DateTime, CheckConstraint, text
 from sqlalchemy.orm import relationship
 from eapp import db, app
 
@@ -24,22 +24,12 @@ class User(BaseModel, UserMixin):
     name = Column(String(50), nullable=False)
     avatar = Column(String(255), default='/static/user_account.png')
     username = Column(String(50), nullable=False, unique=True)
+    phone = Column(String(15), nullable=False, unique=True)
     password = Column(String(100), nullable=False)
     user_role = Column(Enum(UserRole), default=UserRole.USER)
-    phone_numbers = relationship('PhoneNumber', backref='user', lazy=True)
 
     def __str__(self):
         return self.name
-
-
-class PhoneNumber(BaseModel):
-    __tablename__ = 'phone_number'
-
-    number = Column(String(15), nullable=False, unique=True)
-    user_id = Column(Integer, ForeignKey(User.id), nullable=False)
-
-    def __str__(self):
-        return self.number
 
 
 # PHẦN CHUYẾN BAY
@@ -106,6 +96,8 @@ class AirportFlightSegment(BaseModel):
 
 if __name__ == '__main__':
     with app.app_context():
+        db.session.execute(text('DROP TABLE IF EXISTS phone_number;'))
+        db.session.commit()
         db.drop_all()
         db.create_all()
 
