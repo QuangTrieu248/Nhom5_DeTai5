@@ -1,8 +1,8 @@
 from flask import render_template, request, redirect, url_for
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from cloudinary.exceptions import Error as CloudinaryError
-from eapp import app, dao
-
+from eapp import app, dao, login
+from flask_login import logout_user, login_required
 
 @app.route('/')
 def home_view():
@@ -70,6 +70,14 @@ def register_process():
 
     return render_template('register.html', err_msg=err_msg)
 
+@login.user_loader
+def load_user(user_id):
+    return dao.get_user_by_id(user_id)
+@app.route('/logout')
+@login_required
+def logout_process():
+    logout_user()
+    return redirect(url_for('login_view'))
 
 @app.route('/login')
 def login_view():
