@@ -1,5 +1,6 @@
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey
+from sqlalchemy.orm import relationship
 from eapp import db
 from enum import Enum as UserEnum
 
@@ -22,6 +23,27 @@ class User(BaseModel, UserMixin):
     username = Column(String(50), nullable=False, unique=True)
     password = Column(String(100), nullable=False)
     user_role = Column(Enum(UserRoleEnum), default=UserRoleEnum.USER)
+    phones = relationship('PhoneNumber', backref='user', lazy=True)
+
+    def __str__(self):
+        return self.name
+
+
+class PhoneNumber(BaseModel):
+    number = Column(String(20), nullable=False)
+    user_id = Column(Integer, ForeignKey(User.id), nullable=False)
+
+
+class Airport(BaseModel):
+    name = Column(String(100), nullable=False)
+    address = Column(String(255), nullable=False)
+
+    def __str__(self):
+        return self.name
+
+
+class Airplane(BaseModel):
+    name = Column(String(100), nullable=False)
 
     def __str__(self):
         return self.name
