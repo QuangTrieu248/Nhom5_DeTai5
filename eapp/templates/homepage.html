@@ -43,4 +43,28 @@
         </div>
     </div>
 </div>
+
+<!-- JavaScript xử lý ẩn/hiện ô Thời gian về -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const motChieuRadio = document.getElementById("mot_chieu");
+        const khuHoiRadio = document.getElementById("khu_hoi");
+        const khuHoiContainer = document.getElementById("khu_hoi_container");
+        const timeVeInput = document.getElementById("time_ve");
+
+        function toggleKhuHoi() {
+            if (khuHoiRadio.checked) {
+                khuHoiContainer.classList.remove("d-none"); // Hiện ô thời gian về
+                timeVeInput.setAttribute("required", "required"); // Bắt buộc nhập khi chọn khứ hồi
+            } else {
+                khuHoiContainer.classList.add("d-none"); // Ẩn ô thời gian về
+                timeVeInput.removeAttribute("required"); // Bỏ bắt buộc nhập
+                timeVeInput.value = ""; // Xóa dữ liệu cũ nếu có
+            }
+        }
+
+        motChieuRadio.addEventListener("change", toggleKhuHoi);
+        khuHoiRadio.addEventListener("change", toggleKhuHoi);
+    });
+</script>
 {% endblock %}
