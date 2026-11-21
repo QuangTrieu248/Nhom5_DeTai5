@@ -1,0 +1,74 @@
+{% extends 'layout/base.html' %}
+
+
+{% block title %}Fight search{% endblock %}
+
+{% block content %}
+<div class="alert alert-info" >
+    <h4>Chuyến bay: VD( Hà Nội --> Hồ Chí Minh)</h4>
+    <h4>Ngày đi: VD(24/12/2026)</h4>
+</div>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Hãng hàng không</th>
+        <th>mã chuyến bay</th>
+        <th>thời gian đi </th>
+        <th>thời gian đến</th>
+        <th>Giá vé</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>VJ</td>
+        <td>vj302</td>
+        <td> 14</td>
+        <td>21</td>
+        <td>2.5jack</td>
+        <td>
+            <button class="btn btn-warning">Mua vé</button>
+        </td>
+    </tr>
+        <tr>
+        <td>VJ</td>
+        <td>vj302</td>
+        <td> 14</td>
+        <td>21</td>
+        <td>2.5jack</td>
+        <td>
+            <button class="btn btn-warning">Mua vé</button>
+        </td>
+    </tr>
+        <tr>
+        <td>VJ</td>
+        <td>vj302</td>
+        <td> 14</td>
+        <td>21</td>
+        <td>2.5jack</td>
+        <td>
+            <button class="btn btn-warning">Mua vé</button>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>San bay</th>
+        <th>dia chi</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for a in airplane %}
+    <tr>
+        <td>{{a.airline_name}}</td>
+        <td>{{a.number_seat}}</td>
+    </tr>
+    {% endfor %}
+
+    </tbody>
+</table>
+
+{% endblock %}
