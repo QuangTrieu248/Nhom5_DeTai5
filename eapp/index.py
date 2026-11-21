@@ -73,6 +73,14 @@ def register_process():
 
     return render_template('register.html', err_msg=err_msg)
 
+@login.user_loader
+def load_user(user_id):
+    return dao.get_user_by_id(user_id)
+@app.route('/logout')
+@login_required
+def logout_process():
+    logout_user()
+    return redirect(url_for('login_view'))
 
 @app.route('/login')
 def login_view():

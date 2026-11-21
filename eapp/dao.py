@@ -54,4 +54,7 @@ def add_user(name, username, password, phone=None, avatar=None):
         p = PhoneNumber(number=phone.strip(), user=u)
         db.session.add(p)
 
+def get_user_by_id(user_id):
+    return User.query.get(int(user_id))
+
     db.session.commit()
