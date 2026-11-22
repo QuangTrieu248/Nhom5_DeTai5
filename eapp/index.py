@@ -1,8 +1,8 @@
 from flask import render_template, request, redirect, url_for
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from flask_login import login_user, logout_user
+from flask_login import login_user, logout_user, login_required
 from cloudinary.exceptions import Error as CloudinaryError
-from eapp import app, dao, login
+from eapp import app, dao, login, db
 
 
 @login.user_loader
@@ -37,7 +37,7 @@ def register_view():
     return render_template('register.html')
 
 
-@app.route('/register', methods=['post'])
+@app.route('/register', methods=['POST'])
 def register_process():
     name = request.form.get('fullname', '').strip()
     username = request.form.get('username', '').strip()
@@ -64,30 +64,27 @@ def register_process():
                 avatar=avatar_file
             )
             return redirect(url_for('login_view'))
-        except CloudinaryError:
+        except CloudinaryError as ex:
+            print("LỖI CLOUDINARY:", ex)
             err_msg = 'Lỗi tải ảnh đại diện, vui lòng thử lại!'
-        except IntegrityError:
+        except IntegrityError as ex:
+            db.session.rollback()
+            print("LỖI TRÙNG DỮ LIỆU SQL:", ex)
             err_msg = 'Tên tài khoản hoặc số điện thoại đã tồn tại!'
-        except SQLAlchemyError:
+        except SQLAlchemyError as ex:
+            db.session.rollback()
+            print("LỖI DATABASE SQL:", ex)
             err_msg = 'Lỗi kết nối cơ sở dữ liệu, vui lòng thử lại sau!'
 
     return render_template('register.html', err_msg=err_msg)
 
-@login.user_loader
-def load_user(user_id):
-    return dao.get_user_by_id(user_id)
-@app.route('/logout')
-@login_required
-def logout_process():
-    logout_user()
-    return redirect(url_for('login_view'))
 
 @app.route('/login')
 def login_view():
     return render_template('login.html')
 
 
-@app.route('/login', methods=['post'])
+@app.route('/login', methods=['POST'])
 def login_process():
     username = request.form.get('username', '').strip()
     password = request.form.get('password')
@@ -106,13 +103,11 @@ def login_process():
 
 
 @app.route('/logout')
+@login_required
 def logout_view():
     logout_user()
     return redirect(url_for('login_view'))
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
