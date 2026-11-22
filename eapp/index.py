@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from flask_login import login_user, logout_user, login_required
 from cloudinary.exceptions import Error as CloudinaryError
-from eapp import app, dao, login, db
+from eapp import app, dao, login, db, admin
 from eapp.models import Flight, FlightSegment, Ticket, Regulation, User, UserRole, Seat, SeatClass, BoardingPass
 
 @login.user_loader
