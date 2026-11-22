@@ -41,6 +41,9 @@ class UserRole(UserRoleEnum):
     ADMIN = 3
 
 
+UserRoleEnum = UserRole
+
+
 class User(BaseModel, UserMixin):
     name = Column(String(50), nullable=False)
     avatar = Column(String(255), default='/static/user_account.png')
@@ -64,6 +67,9 @@ class Airport(BaseModel):
     name = Column(String(100), nullable=False)
     address = Column(String(500), nullable=False)
 
+    def __str__(self):
+        return self.name
+
 
 class Airline(BaseModel):
     name = Column(String(100), unique=True, nullable=False)
@@ -75,6 +81,9 @@ class Airplane(BaseModel):
     number_seat = Column(Integer, nullable=False)
     airline_id = Column(Integer, ForeignKey(Airline.id), nullable=False) # Bổ sung dòng này
     segments_relation = relationship('FlightSegment', backref='airplane', lazy=True)
+
+    def __str__(self):
+        return self.airline_name
 
 
 class FlightRoute(BaseModel):
@@ -113,7 +122,6 @@ class FlightSegment(BaseModel):
 
     flight_id = Column(Integer, ForeignKey(Flight.id), nullable=False)
     airplane_id = Column(Integer, ForeignKey(Airplane.id), nullable=False)
-
     airport_relation = relationship('AirportFlightSegment', backref='flight_segment', lazy=True)
 
     __table_args__ = (
@@ -368,6 +376,6 @@ def seed_flight_data():
 
 
 if __name__ == '__main__':
-      with app.app_context():
+    with app.app_context():
         db.drop_all()
         seed_flight_data()

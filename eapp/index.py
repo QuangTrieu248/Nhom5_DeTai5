@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from flask_login import login_user, logout_user, login_required
 from cloudinary.exceptions import Error as CloudinaryError
-from eapp import app, dao, login, db
+from eapp import app, dao, login, db, admin
 from eapp.models import Flight, FlightSegment, Ticket, Regulation, User, UserRole, Seat, SeatClass, BoardingPass
 
 @login.user_loader
@@ -206,7 +206,7 @@ def register_view():
     return render_template('register.html')
 
 
-@app.route('/register', methods=['post'])
+@app.route('/register', methods=['POST'])
 def register_process():
     name = request.form.get('fullname', '').strip()
     username = request.form.get('username', '').strip()
@@ -233,11 +233,16 @@ def register_process():
                 avatar=avatar_file
             )
             return redirect(url_for('login_view'))
-        except CloudinaryError:
+        except CloudinaryError as ex:
+            print("LỖI CLOUDINARY:", ex)
             err_msg = 'Lỗi tải ảnh đại diện, vui lòng thử lại!'
-        except IntegrityError:
+        except IntegrityError as ex:
+            db.session.rollback()
+            print("LỖI TRÙNG DỮ LIỆU SQL:", ex)
             err_msg = 'Tên tài khoản hoặc số điện thoại đã tồn tại!'
-        except SQLAlchemyError:
+        except SQLAlchemyError as ex:
+            db.session.rollback()
+            print("LỖI DATABASE SQL:", ex)
             err_msg = 'Lỗi kết nối cơ sở dữ liệu, vui lòng thử lại sau!'
 
     return render_template('register.html', err_msg=err_msg)
@@ -248,7 +253,7 @@ def login_view():
     return render_template('login.html')
 
 
-@app.route('/login', methods=['post'])
+@app.route('/login', methods=['POST'])
 def login_process():
     username = request.form.get('username', '').strip()
     password = request.form.get('password')
