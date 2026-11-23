@@ -1,9 +1,20 @@
-from flask import render_template, request, redirect, url_for, flash
+from functools import wraps
+from flask import render_template, request, redirect, url_for, flash, abort
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from cloudinary.exceptions import Error as CloudinaryError
 from eapp import app, dao, login, db, admin
 from eapp.models import Flight, FlightSegment, Ticket, Regulation, User, UserRole, Seat, SeatClass, BoardingPass
+
+
+def staff_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.user_role not in [UserRole.STAFF, UserRole.ADMIN]:
+            return abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 @login.user_loader
 def load_user(user_id):
@@ -17,6 +28,7 @@ def home_view():
 
 
 @app.route('/staffpage')
+@staff_required
 def staff_view():
     return render_template('staffpage.html')
 
@@ -264,6 +276,10 @@ def login_process():
         user = dao.check_login(username=username, password=password)
         if user:
             login_user(user=user)
+            if user.user_role == UserRole.ADMIN:
+                return redirect('/admin')
+            elif user.user_role == UserRole.STAFF:
+                return redirect(url_for('staff_view'))
             return redirect(url_for('home_view'))
         else:
             err_msg = 'Tên đăng nhập hoặc mật khẩu không chính xác!'
