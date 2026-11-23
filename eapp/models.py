@@ -1,14 +1,32 @@
-import hashlib
-from datetime import datetime
-from decimal import Decimal
-from enum import Enum as AirportRoleEnum
-from enum import Enum as SeatClassEnum
-from enum import Enum as UserRoleEnum
+# import datetime
+# from decimal import Decimal
+#
+# from flask_login import UserMixin
+# from sqlalchemy import Column, Integer, String, Enum, ForeignKey, DateTime, CheckConstraint, text, UniqueConstraint, \
+#     Numeric
+# from sqlalchemy.orm import relationship
+# from eapp import db, app
+# from enum import Enum as UserRoleEnum
+# from enum import Enum as AirportRoleEnum
+# from enum import Enum as SeatClassEnum
 
+import datetime
+import hashlib
+from decimal import Decimal
+
+# from xmlrpc.client import DateTime
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, CheckConstraint, DateTime, UniqueConstraint, Numeric, text
 from sqlalchemy.orm import relationship
 from eapp import db, app
+from enum import Enum as UserEnum
+from enum import Enum as AirportRoleEnum
+from enum import Enum as UserRoleEnum
+from enum import Enum as SeatClassEnum
+
+
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, CheckConstraint, DateTime, UniqueConstraint, Numeric, text
+from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 
 class BaseModel(db.Model):
@@ -39,7 +57,8 @@ class User(BaseModel, UserMixin):
         return self.name
 
 
-# ------------------------------------ PHẦN CHUYẾN BAY --------------------------
+
+#------------------------------------ PHẦN CHUYẾN BAY--------------------------
 class AirportRole(AirportRoleEnum):
     DEPARTURE = 1
     ARRIVAL = 2
@@ -64,7 +83,7 @@ class Airline(BaseModel):
 
 class Airplane(BaseModel):
     number_seat = Column(Integer, nullable=False)
-    airline_id = Column(Integer, ForeignKey(Airline.id), nullable=False)
+    airline_id = Column(Integer, ForeignKey(Airline.id), nullable=False) # Bổ sung dòng này
     segments_relation = relationship('FlightSegment', backref='airplane', lazy=True)
 
     def __str__(self):
@@ -74,9 +93,9 @@ class Airplane(BaseModel):
 class FlightRoute(BaseModel):
     name = Column(String(100), nullable=False)
     airline_id = Column(Integer, ForeignKey(Airline.id), nullable=False)
-    airline = relationship('Airline', backref='flight_routes', lazy=True)
     flights_relation = relationship('Flight', backref='flight_route', lazy=True)
     airport_relation = relationship('AirportFlightRoute', backref='flight_route', lazy=True)
+    airline = relationship('Airline', backref='flight_routes', lazy=True)
 
     def __str__(self):
         return self.name
@@ -84,9 +103,11 @@ class FlightRoute(BaseModel):
 
 class AirportFlightRoute(BaseModel):
     role = Column(Enum(AirportRole), default=AirportRole.DEPARTURE, nullable=False)
+
     airport_id = Column(Integer, ForeignKey(Airport.id), nullable=False)
     flight_route_id = Column(Integer, ForeignKey(FlightRoute.id), nullable=False)
 
+    # Trong AirportFlightRoute
     __table_args__ = (
         db.UniqueConstraint('flight_route_id', 'role', name='uq_route_airport_role'),
     )
@@ -118,20 +139,22 @@ class FlightSegment(BaseModel):
         CheckConstraint('departure_time < arrival_time', name='check_segment_time'),
         CheckConstraint('sequence > 0', name='check_sequence_positive'),
         UniqueConstraint('flight_id', 'sequence', name='uix_flight_sequence')
+
     )
+
 
 
 class AirportFlightSegment(BaseModel):
     role = Column(Enum(AirportRole), default=AirportRole.DEPARTURE, nullable=False)
     airport_id = Column(Integer, ForeignKey(Airport.id), nullable=False)
     flight_segment_id = Column(Integer, ForeignKey(FlightSegment.id), nullable=False)
-
+    # Trong AirportFlightSegment
     __table_args__ = (
         db.UniqueConstraint('flight_segment_id', 'role', name='uq_segment_airport_role'),
     )
 
 
-# --------------------- PHẦN VÉ -----------
+# ---------------------PHẦN VÉ-----------
 class SeatClass(SeatClassEnum):
     ECONOMY = 1
     BUSINESS = 2
@@ -146,8 +169,11 @@ class Seat(BaseModel):
 
 
 class Ticket(BaseModel):
+    """Một vé = một hành khách = một ghế cho cả chuyến bay."""
     __tablename__ = "ticket"
-    price = Column(Numeric(12, 0), nullable=False)
+    #
+    price = Column(Numeric(12, 0), nullable=False)  # giá chốt lúc đặt
+    #
     booking_time = Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     flight_id = Column(Integer, ForeignKey("flight.id"), nullable=False)
@@ -160,6 +186,7 @@ class Ticket(BaseModel):
     boarding_passes = relationship("BoardingPass", back_populates="ticket", cascade="all, delete-orphan")
 
     __table_args__ = (
+        # Một ghế chỉ bán một lần trong mỗi chuyến
         UniqueConstraint("flight_id", "seat_id", name="uq_ticket_flight_seat"),
     )
 
@@ -179,15 +206,20 @@ class BoardingPass(BaseModel):
 
 
 class Regulation(BaseModel):
+    """Quy định toàn hệ thống. Thường chỉ có 1 dòng."""
     __tablename__ = "regulation"
-    max_airports = Column(db.Integer, nullable=False)
-    min_flight_time = Column(db.Integer, nullable=False)
-    max_intermediate_airports = Column(db.Integer, nullable=False)
-    min_stop_time = Column(db.Integer, nullable=False)
-    max_stop_time = Column(db.Integer, nullable=False)
+    # Quy định về sân bay / thời gian bay
+    max_airports = Column(db.Integer, nullable=False)                  # số sân bay
+    min_flight_time = Column(db.Integer, nullable=False)               # phút
+    max_intermediate_airports = Column(db.Integer, nullable=False)     # sân bay trung gian tối đa
+    min_stop_time = Column(db.Integer, nullable=False)                 # phút
+    max_stop_time = Column(db.Integer, nullable=False)                 # phút
 
-    ticket_sale_deadline = Column(db.Integer, nullable=False)
-    booking_deadline = Column(db.Integer, nullable=False)
+    # Quy định về bán vé / đặt vé (số giờ trước giờ khởi hành)
+    ticket_sale_deadline = Column(db.Integer, nullable=False)          # thời gian bán vé
+    booking_deadline = Column(db.Integer, nullable=False)              # thời gian đặt vé
+
+    # Hệ số giá theo hạng ghế: price = Flight.base_price * hệ số
     economy_multiplier = Column(db.Numeric(4, 2), nullable=False, default=Decimal("1.00"))
     business_multiplier = Column(db.Numeric(4, 2), nullable=False, default=Decimal("1.50"))
 
@@ -197,19 +229,22 @@ class Regulation(BaseModel):
         return self.economy_multiplier
 
 
+
 def seed_flight_data():
     with app.app_context():
+        # Đảm bảo toàn bộ bảng đã được tạo trong database
         db.create_all()
 
+        # Tránh chèn trùng lặp nếu dữ liệu hãng bay đã tồn tại
         if Airline.query.first():
             print("Dữ liệu chuyến bay đã tồn tại trong CSDL.")
             return
 
         try:
-            # Tài khoản Admin mặc định
+            # 0. Tài khoản Admin mặc định
             if not User.query.filter_by(username="admin").first():
                 admin_acc = User(
-                    name="Admin",
+                    name="Quản trị viên",
                     username="admin",
                     phone="0900000000",
                     password=hashlib.md5("123456".encode("utf-8")).hexdigest(),
@@ -217,7 +252,7 @@ def seed_flight_data():
                 )
                 db.session.add(admin_acc)
 
-            # 1. Quy định hệ thống
+            # 1. Quy định hệ thống (dùng tính giá khi chọn ghế)
             reg = Regulation(
                 max_airports=10,
                 min_flight_time=45,
@@ -251,7 +286,7 @@ def seed_flight_data():
             db.session.add_all([plane_vna_1, plane_vna_2, plane_vj_1])
             db.session.flush()
 
-            # 5. Tuyến bay (FlightRoute) & Sân bay đầu/cuối của tuyến
+            # 5. Tuyến bay (FlightRoute) & Sân bay đầu/cuối của tuyến (AirportFlightRoute)
             route_vna_sgn_han = FlightRoute(name="Sài Gòn - Hà Nội (VNA)", airline_id=vna.id)
             route_vj_sgn_han = FlightRoute(name="Sài Gòn - Hà Nội (VJ)", airline_id=vj.id)
             route_vna_sgn_dad = FlightRoute(name="Sài Gòn - Đà Nẵng (VNA)", airline_id=vna.id)
@@ -259,27 +294,33 @@ def seed_flight_data():
             db.session.flush()
 
             db.session.add_all([
+                # Tuyến SGN - HAN (VNA)
                 AirportFlightRoute(role=AirportRole.DEPARTURE, airport_id=sgn.id, flight_route_id=route_vna_sgn_han.id),
                 AirportFlightRoute(role=AirportRole.ARRIVAL, airport_id=han.id, flight_route_id=route_vna_sgn_han.id),
+                # Tuyến SGN - HAN (VJ)
                 AirportFlightRoute(role=AirportRole.DEPARTURE, airport_id=sgn.id, flight_route_id=route_vj_sgn_han.id),
                 AirportFlightRoute(role=AirportRole.ARRIVAL, airport_id=han.id, flight_route_id=route_vj_sgn_han.id),
+                # Tuyến SGN - DAD (VNA)
                 AirportFlightRoute(role=AirportRole.DEPARTURE, airport_id=sgn.id, flight_route_id=route_vna_sgn_dad.id),
                 AirportFlightRoute(role=AirportRole.ARRIVAL, airport_id=dad.id, flight_route_id=route_vna_sgn_dad.id),
             ])
 
             # 6. Chuyến bay (Flight)
+            # Chuyến 1: VN210 (Nối chuyến 2 chặng: SGN -> DAD -> HAN)
             flight_vn210 = Flight(
                 flight_code="VN210",
                 base_price=Decimal("2200000"),
                 flight_route_id=route_vna_sgn_han.id,
                 airline_id=vna.id
             )
+            # Chuyến 2: VJ120 (Bay thẳng 1 chặng: SGN -> HAN)
             flight_vj120 = Flight(
                 flight_code="VJ120",
                 base_price=Decimal("1500000"),
                 flight_route_id=route_vj_sgn_han.id,
                 airline_id=vj.id
             )
+            # Chuyến 3: VN115 (Bay thẳng 1 chặng: SGN -> DAD)
             flight_vn115 = Flight(
                 flight_code="VN115",
                 base_price=Decimal("1200000"),
@@ -290,6 +331,7 @@ def seed_flight_data():
             db.session.flush()
 
             # 7. Chặng bay (FlightSegment)
+            # 2 chặng của VN210
             seg_vn210_1 = FlightSegment(
                 departure_time=datetime(2026, 11, 25, 7, 30),
                 arrival_time=datetime(2026, 11, 25, 8, 50),
@@ -304,6 +346,7 @@ def seed_flight_data():
                 flight_id=flight_vn210.id,
                 airplane_id=plane_vna_2.id
             )
+            # 1 chặng của VJ120
             seg_vj120_1 = FlightSegment(
                 departure_time=datetime(2026, 11, 25, 9, 0),
                 arrival_time=datetime(2026, 11, 25, 11, 10),
@@ -311,6 +354,7 @@ def seed_flight_data():
                 flight_id=flight_vj120.id,
                 airplane_id=plane_vj_1.id
             )
+            # 1 chặng của VN115
             seg_vn115_1 = FlightSegment(
                 departure_time=datetime(2026, 11, 25, 14, 15),
                 arrival_time=datetime(2026, 11, 25, 15, 35),
@@ -321,14 +365,18 @@ def seed_flight_data():
             db.session.add_all([seg_vn210_1, seg_vn210_2, seg_vj120_1, seg_vn115_1])
             db.session.flush()
 
-            # 8. Sân bay đi/đến từng chặng
+            # 8. Sân bay đi/đến từng chặng (AirportFlightSegment)
             db.session.add_all([
+                # VN210 - Chặng 1: SGN -> DAD
                 AirportFlightSegment(role=AirportRole.DEPARTURE, airport_id=sgn.id, flight_segment_id=seg_vn210_1.id),
                 AirportFlightSegment(role=AirportRole.ARRIVAL, airport_id=dad.id, flight_segment_id=seg_vn210_1.id),
+                # VN210 - Chặng 2: DAD -> HAN
                 AirportFlightSegment(role=AirportRole.DEPARTURE, airport_id=dad.id, flight_segment_id=seg_vn210_2.id),
                 AirportFlightSegment(role=AirportRole.ARRIVAL, airport_id=han.id, flight_segment_id=seg_vn210_2.id),
+                # VJ120 - Chặng 1: SGN -> HAN
                 AirportFlightSegment(role=AirportRole.DEPARTURE, airport_id=sgn.id, flight_segment_id=seg_vj120_1.id),
                 AirportFlightSegment(role=AirportRole.ARRIVAL, airport_id=han.id, flight_segment_id=seg_vj120_1.id),
+                # VN115 - Chặng 1: SGN -> DAD
                 AirportFlightSegment(role=AirportRole.DEPARTURE, airport_id=sgn.id, flight_segment_id=seg_vn115_1.id),
                 AirportFlightSegment(role=AirportRole.ARRIVAL, airport_id=dad.id, flight_segment_id=seg_vn115_1.id),
             ])
