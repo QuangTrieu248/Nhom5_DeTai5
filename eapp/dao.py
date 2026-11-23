@@ -86,13 +86,16 @@ def index():
     return render_template("homepage.html", airports=airports)
 
 
-def query_flights_by_route(dep_id, arr_id, date_str):
+
+
+def query_flights_by_route(dep_id=None, arr_id=None, date_str=None):
     dep_route = aliased(AirportFlightRoute)
     arr_route = aliased(AirportFlightRoute)
 
     query = (
         db.session.query(
             Flight.id.label("id"),
+            Flight.airline_id.label("airline_id"),
             Airline.name.label("airline_name"),
             Flight.flight_code.label("flight_code"),
             func.min(FlightSegment.departure_time).label("departure_time"),
@@ -103,23 +106,16 @@ def query_flights_by_route(dep_id, arr_id, date_str):
         .join(Airline, Flight.airline_id == Airline.id)
         .join(FlightSegment, Flight.id == FlightSegment.flight_id)
         .join(FlightRoute, Flight.flight_route_id == FlightRoute.id)
-        # Chỉ lọc sân bay ĐI và ĐẾN của toàn tuyến (FlightRoute)
-        .join(
-            dep_route,
-            (dep_route.flight_route_id == FlightRoute.id) &
-            (dep_route.role == AirportRole.DEPARTURE)
-        )
-        .join(
-            arr_route,
-            (arr_route.flight_route_id == FlightRoute.id) &
-            (arr_route.role == AirportRole.ARRIVAL)
-        )
-        .filter(
-            dep_route.airport_id == dep_id,
-            arr_route.airport_id == arr_id
-        )
-        .group_by(Flight.id, Airline.name, Flight.flight_code, Flight.base_price)
+        .join(dep_route, (dep_route.flight_route_id == FlightRoute.id) & (dep_route.role == AirportRole.DEPARTURE))
+        .join(arr_route, (arr_route.flight_route_id == FlightRoute.id) & (arr_route.role == AirportRole.ARRIVAL))
     )
+
+    if dep_id:
+        query = query.filter(dep_route.airport_id == dep_id)
+    if arr_id:
+        query = query.filter(arr_route.airport_id == arr_id)
+
+    query = query.group_by(Flight.id, Flight.airline_id, Airline.name, Flight.flight_code, Flight.base_price)
 
     if date_str:
         target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -127,3 +123,32 @@ def query_flights_by_route(dep_id, arr_id, date_str):
 
     return query.order_by(func.min(FlightSegment.departure_time).asc()).all()
 
+def get_flight_seat_data(flight_id):
+    """Lấy thông tin chuyến bay, danh sách chặng và tập ID các ghế đã bị đặt."""
+    if not flight_id:
+        return None
+
+    flight = Flight.query.get(flight_id)
+    if not flight:
+        return None
+
+    # Lấy các chặng bay theo đúng thứ tự sequence (1, 2, ...)
+    segments = (
+        FlightSegment.query
+        .filter_by(flight_id=flight.id)
+        .order_by(FlightSegment.sequence.asc())
+        .all()
+    )
+
+    # Lấy danh sách seat_id đã có Ticket trên chuyến bay này
+    booked_seat_ids = {
+        t.seat_id for t in Ticket.query.filter_by(flight_id=flight.id).all()
+    }
+
+    return {
+        "flight": flight,
+        "segments": segments,
+        "departure_time": segments[0].departure_time if segments else None,
+        "arrival_time": segments[-1].arrival_time if segments else None,
+        "booked_seat_ids": booked_seat_ids
+    }

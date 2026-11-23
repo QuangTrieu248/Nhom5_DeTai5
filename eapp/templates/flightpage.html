@@ -4,31 +4,121 @@
 {% block title %}Fight search{% endblock %}
 
 {% block content %}
+{% if loai_ve == 'khu_hoi' %}
+<!-- ==================== TRƯỜNG HỢP 1: VÉ KHỨ HỒI ==================== -->
 <div class="alert alert-info" >
-    <h4>Chuyến bay: VD( Hà Nội --> Hồ Chí Minh)</h4>
+    <h4>Chuyến bay: </h4>
 </div>
+<form method="GET" action="{{ url_for('booking_view') }}">
+    <h5 class="fw-bold text-primary mt-3">1. Chọn chuyến đi</h5>
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Hãng bay</th>
+                <th>Mã chuyến</th>
+                <th>Khởi hành</th>
+                <th>Hạ cánh</th>
+                <th>Giá cơ bản</th>
+                <th class="text-center">Chọn</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in outbound_flights %}
+            <tr>
+                <td>{{ f.airline_name }}</td>
+                <td>{{ f.flight_code }}</td>
+                <td>{{ f.departure_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ f.arrival_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ "{:,.0f}".format(f.base_price) }} VNĐ</td>
+                <td class="text-center">
+                    <input class="form-check-input" type="radio" name="outbound_id" value="{{ f.id }}" required>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted">Không có chuyến đi phù hợp.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Hãng hàng không</th>
-        <th>mã chuyến bay</th>
-        <th>thời gian đi</th>
-        <th>thời gian đến</th>
-        <th>Giá vé</th>
-    </tr>
+    <div class="alert alert-info" >
+    <h4>Chuyến bay: VD( Hà Nội --> Hồ Chí Minh)</h4>
+    </div>
+    <h5 class="fw-bold text-success mt-4">2. Chọn chuyến về</h5>
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Hãng bay</th>
+                <th>Mã chuyến</th>
+                <th>Khởi hành</th>
+                <th>Hạ cánh</th>
+                <th>Giá cơ bản</th>
+                <th class="text-center">Chọn</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in return_flights %}
+            <tr>
+                <td>{{ f.airline_name }}</td>
+                <td>{{ f.flight_code }}</td>
+                <td>{{ f.departure_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ f.arrival_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ "{:,.0f}".format(f.base_price) }} VNĐ</td>
+                <td class="text-center">
+                    <input class="form-check-input" type="radio" name="return_id" value="{{ f.id }}" required>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted">Không có chuyến về phù hợp.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if outbound_flights and return_flights %}
+    <div class="text-end mt-3">
+        <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+            Tiếp tục chọn ghế
+        </button>
+    </div>
+    {% endif %}
+</form>
+
+{% else %}
+<!-- ==================== TRƯỜNG HỢP 2: VÉ MỘT CHIỀU ==================== -->
+<table class="table table-bordered table-hover align-middle mt-3">
+    <thead class="table-light">
+        <tr>
+            <th>Hãng bay</th>
+            <th>Mã chuyến</th>
+            <th>Khởi hành</th>
+            <th>Hạ cánh</th>
+            <th>Giá cơ bản</th>
+            <th class="text-center">Thao tác</th>
+        </tr>
     </thead>
     <tbody>
-    {% for f in outbound_flights %}
-    <tr>
-        <td>{{ f.airline_name }}</td>
-        <td>{{ f.flight_code }}</td>
-        <td>{{ f.departure_time.strftime('%d/%m/%Y %H:%M') }}</td>
-        <td>{{ f.arrival_time.strftime('%d/%m/%Y %H:%M') }}</td>
-        <td>{{ "{:,.0f}".format(f.base_price) }} VNĐ</td>
-    </tr>
-    {% endfor %}
+        {% for f in outbound_flights %}
+        <tr>
+            <td>{{ f.airline_name }}</td>
+            <td>{{ f.flight_code }}</td>
+            <td>{{ f.departure_time.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ f.arrival_time.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ "{:,.0f}".format(f.base_price) }} VNĐ</td>
+<!--            ! xử lý kểm tra login truoc khi dat ve   -->
+            <td class="text-center">
+                <a href="{{ url_for('booking_view', outbound_id=f.id) }}" class="btn btn-sm btn-primary fw-semibold">
+                    Đặt vé
+                </a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" class="text-center text-muted">
+            <img width="900px" src="{{url_for('static', filename='notfound.png')}}" alt="not found">
+            </td>
+        </tr>
+        {% endfor %}
     </tbody>
 </table>
+{% endif %}
 
 {% endblock %}
