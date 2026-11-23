@@ -27,10 +27,44 @@ def home_view():
     return render_template('homepage.html', airports=airports)
 
 
-@app.route('/staffpage')
+@app.route('/staffpage', methods=['GET', 'POST'])
 @staff_required
 def staff_view():
-    return render_template('staffpage.html')
+    if request.method == 'POST':
+        flight_code = request.form.get('flight_code')
+        airline_id = request.form.get('airline_id', type=int)
+        flight_route_id = request.form.get('flight_route_id', type=int)
+        base_price = request.form.get('base_price')
+
+        dep_ids = request.form.getlist('dep_airport_id[]', type=int)
+        arr_ids = request.form.getlist('arr_airport_id[]', type=int)
+        plane_ids = request.form.getlist('airplane_id[]', type=int)
+        dep_times = request.form.getlist('departure_time[]')
+        arr_times = request.form.getlist('arrival_time[]')
+
+        segments_input = []
+        for i in range(len(dep_ids)):
+            segments_input.append({
+                'dep_airport_id': dep_ids[i],
+                'arr_airport_id': arr_ids[i] if i < len(arr_ids) else None,
+                'airplane_id': plane_ids[i] if i < len(plane_ids) else None,
+                'departure_time': dep_times[i] if i < len(dep_times) else '',
+                'arrival_time': arr_times[i] if i < len(arr_times) else ''
+            })
+
+        ok, msg = dao.create_scheduled_flight(
+            flight_code=flight_code,
+            airline_id=airline_id,
+            flight_route_id=flight_route_id,
+            base_price_raw=base_price,
+            segments_input=segments_input
+        )
+        flash(msg, 'success' if ok else 'danger')
+        if ok:
+            return redirect(url_for('staff_view'))
+
+    form_data = dao.get_schedule_form_data()
+    return render_template('staffpage.html', **form_data)
 
 #=======================================================================================================
 @app.route("/flightpage")
