@@ -35,7 +35,7 @@ class BaseModel(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
 
-# PHẦN USER
+#--------------------------- PHẦN USER-------------------------------
 class UserRole(UserRoleEnum):
     USER = 1
     STAFF = 2
@@ -55,6 +55,17 @@ class User(BaseModel, UserMixin):
 
     def __str__(self):
         return self.name
+
+class Customer(BaseModel):
+    __tablename__ = "customer"
+
+    name = Column(db.String(100), nullable=False)
+    phone = Column(db.String(20), nullable=False)
+
+    tickets = relationship("Ticket", backref="customer", lazy=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.phone})"
 
 
 
@@ -169,24 +180,19 @@ class Seat(BaseModel):
 
 
 class Ticket(BaseModel):
-    """Một vé = một hành khách = một ghế cho cả chuyến bay."""
     __tablename__ = "ticket"
-    #
-    price = Column(Numeric(12, 0), nullable=False)  # giá chốt lúc đặt
-    #
+
+    price = Column(db.Numeric(10, 2), nullable=False)
     booking_time = Column(db.DateTime, nullable=False, default=datetime.now)
 
-    flight_id = Column(Integer, ForeignKey("flight.id"), nullable=False)
-    seat_id = Column(Integer, ForeignKey("seat.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-
+    flight_id = Column(db.Integer, db.ForeignKey(Flight.id), nullable=False)
+    seat_id = Column(db.Integer, db.ForeignKey(Seat.id), nullable=False)
+    user_id = Column(db.Integer, db.ForeignKey(User.id), nullable=False)
+    customer_id = Column(db.Integer, db.ForeignKey(Customer.id), nullable=False)
     flight = relationship("Flight", backref="tickets")
     seat = relationship("Seat", back_populates="tickets")
-    user = relationship("User", backref="tickets")
     boarding_passes = relationship("BoardingPass", back_populates="ticket", cascade="all, delete-orphan")
-
     __table_args__ = (
-        # Một ghế chỉ bán một lần trong mỗi chuyến
         UniqueConstraint("flight_id", "seat_id", name="uq_ticket_flight_seat"),
     )
 

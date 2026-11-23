@@ -206,8 +206,8 @@
                                 <td class="fw-bold">#{{ t.id }}</td>
                                 <td class="text-primary fw-semibold">{{ t.flight.flight_code }}</td>
                                 <td>{{ t.seat.seat_number }} ({{ 'Thương gia' if t.seat.seat_class.name == 'BUSINESS' else 'Phổ thông' }})</td>
-                                <td>{{ t.user.name }}</td>
-                                <td>{{ t.user.phone }}</td>
+                                <td>{{ t.customer.name }}</td>
+                                <td>{{ t.customer.phone }}</td>
                                 <td class="fw-semibold text-success">{{ "{:,.0f}".format(t.price) }} đ</td>
                                 <td>{{ t.booking_time.strftime('%d/%m/%Y %H:%M') }}</td>
                             </tr>

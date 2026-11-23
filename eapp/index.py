@@ -9,6 +9,7 @@ from eapp.models import (
     Airport,
     AirportRole,
     BoardingPass,
+    Customer,
     Flight,
     FlightSegment,
     Regulation,
@@ -90,7 +91,8 @@ def staff_sell_ticket_view():
         flight_id=flight_id,
         seat_id=seat_id,
         passenger_name=passenger_name,
-        passenger_phone=passenger_phone
+        passenger_phone=passenger_phone,
+        staff_id=current_user.id
     )
     flash(msg, 'success' if ok else 'danger')
     return redirect(url_for('staff_view'))
@@ -166,95 +168,101 @@ def booking_view():
     if request.method == "POST":
         outbound_id = request.form.get("outbound_id", type=int)
         outbound_seat_id = request.form.get("outbound_seat_id", type=int)
-        return_id = request.form.get("return_id", type=int)
-        return_seat_id = request.form.get("return_seat_id", type=int)
+        passenger_name = (request.form.get("passenger_name") or "").strip()
+        passenger_phone = (request.form.get("passenger_phone") or "").strip()
 
         if not outbound_id or not outbound_seat_id:
-            flash("Vui lòng chọn ghế cho chuyến đi!", "danger")
+            flash("Vui lòng chọn ghế cho chuyến bay!", "danger")
             return redirect(request.referrer or url_for("flight_page_view"))
 
-        if return_id and not return_seat_id:
-            flash("Vui lòng chọn ghế cho chuyến về!", "danger")
-            return redirect(request.referrer or url_for("flight_page_view"))
-
-        legs = [(outbound_id, outbound_seat_id)]
-        if return_id and return_seat_id:
-            legs.append((return_id, return_seat_id))
+        if not passenger_name or not passenger_phone:
+            flash("Vui lòng nhập đầy đủ họ tên và số điện thoại hành khách!", "danger")
+            return redirect(url_for("booking_view", outbound_id=outbound_id))
 
         try:
-            created_tickets = []
-            for f_id, s_id in legs:
-                flight = Flight.query.get_or_404(f_id)
-                seat = Seat.query.get_or_404(s_id)
+            flight = Flight.query.get_or_404(outbound_id)
+            seat = Seat.query.get_or_404(outbound_seat_id)
 
-                segments = (
-                    FlightSegment.query
-                    .filter_by(flight_id=flight.id)
-                    .order_by(FlightSegment.sequence.asc())
-                    .all()
+            segments = (
+                FlightSegment.query
+                .filter_by(flight_id=flight.id)
+                .order_by(FlightSegment.sequence.asc())
+                .all()
+            )
+            if segments and (segments[0].departure_time - datetime.now() < timedelta(hours=booking_deadline)):
+                flash(
+                    f"Chuyến {flight.flight_code} đã quá hạn đặt vé trực tuyến "
+                    f"(phải đặt trước ít nhất {booking_deadline} giờ)!",
+                    "danger"
                 )
-                if segments and (segments[0].departure_time - datetime.now() < timedelta(hours=booking_deadline)):
-                    db.session.rollback()
-                    flash(f"Chuyến {flight.flight_code} đã quá hạn đặt vé trực tuyến (phải đặt trước ít nhất {booking_deadline} giờ)!", "danger")
-                    return redirect(url_for("flight_page_view"))
+                return redirect(url_for("flight_page_view"))
 
-                multiplier = (
-                    reg.business_multiplier
-                    if seat.seat_class == SeatClass.BUSINESS
-                    else reg.economy_multiplier
-                )
-                final_price = flight.base_price * multiplier
+            if Ticket.query.filter_by(flight_id=flight.id, seat_id=seat.id).first():
+                flash("Ghế bạn chọn vừa có hành khách khác đặt trước. Vui lòng chọn ghế khác!", "danger")
+                return redirect(url_for("booking_view", outbound_id=outbound_id))
 
-                ticket = Ticket(
-                    price=final_price,
-                    flight_id=flight.id,
-                    seat_id=seat.id,
-                    user_id=current_user.id
-                )
-                db.session.add(ticket)
+            # Lưu hoặc tái sử dụng hồ sơ hành khách trong bảng Customer
+            customer = Customer.query.filter_by(name=passenger_name, phone=passenger_phone).first()
+            if not customer:
+                customer = Customer(name=passenger_name, phone=passenger_phone)
+                db.session.add(customer)
                 db.session.flush()
 
-                for seg in segments:
-                    db.session.add(BoardingPass(
-                        ticket_id=ticket.id,
-                        flight_segment_id=seg.id
-                    ))
+            multiplier = (
+                reg.business_multiplier
+                if seat.seat_class == SeatClass.BUSINESS
+                else reg.economy_multiplier
+            )
+            final_price = flight.base_price * multiplier
 
-                created_tickets.append(ticket)
+            ticket = Ticket(
+                price=final_price,
+                booking_time=datetime.now(),
+                flight_id=flight.id,
+                seat_id=seat.id,
+                user_id=current_user.id,
+                customer_id=customer.id
+            )
+            db.session.add(ticket)
+            db.session.flush()
+
+            for seg in segments:
+                db.session.add(BoardingPass(
+                    ticket_id=ticket.id,
+                    flight_segment_id=seg.id
+                ))
 
             db.session.commit()
-            flash(f"Đặt vé thành công! Mã vé: {', '.join('#' + str(t.id) for t in created_tickets)}", "success")
-            return redirect(url_for("flight_page_view"))
+            flash(
+                f"Đặt vé #{ticket.id} thành công cho hành khách {customer.name} ({customer.phone}) "
+                f"- Ghế {seat.seat_number}!",
+                "success"
+            )
+            return redirect(url_for("my_tickets_view"))
 
         except IntegrityError:
             db.session.rollback()
             flash("Ghế bạn chọn vừa có hành khách khác đặt trước. Vui lòng chọn ghế khác!", "danger")
-            return redirect(url_for("booking_view", outbound_id=outbound_id, return_id=return_id))
+            return redirect(url_for("booking_view", outbound_id=outbound_id))
 
         except Exception as e:
             db.session.rollback()
             flash(f"Có lỗi xảy ra khi đặt vé: {str(e)}", "danger")
-            return redirect(url_for("booking_view", outbound_id=outbound_id, return_id=return_id))
+            return redirect(url_for("booking_view", outbound_id=outbound_id))
 
     outbound_id = request.args.get("outbound_id", type=int)
-    return_id = request.args.get("return_id", type=int)
-
     outbound_data = get_flight_seat_data(outbound_id)
     if not outbound_data:
         flash("Không tìm thấy thông tin chuyến bay!", "warning")
         return redirect(url_for("flight_page_view"))
 
-    return_data = get_flight_seat_data(return_id) if return_id else None
     all_seats = Seat.query.order_by(Seat.seat_number.asc()).all()
-
     return render_template(
         "booking.html",
         outbound=outbound_data,
-        return_flight=return_data,
         seats=all_seats,
         eco_mult=eco_mult,
-        bus_mult=bus_mult,
-        booking_time=datetime.now()
+        bus_mult=bus_mult
     )
 
 #==================================================================================================================

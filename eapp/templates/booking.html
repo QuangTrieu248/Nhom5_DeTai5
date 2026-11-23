@@ -26,7 +26,7 @@
         <input type="hidden" name="outbound_id" value="{{ outbound.flight.id }}">
         <input type="hidden" name="outbound_seat_id" id="outboundSeatInput" required>
 
-        <!-- THÔNG TIN CHUYẾN ĐI -->
+        <!-- THÔNG TIN CHUYẾN BAY & SƠ ĐỒ GHẾ -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">
@@ -82,20 +82,56 @@
             </div>
         </div>
 
-        <!-- TÓM TẮT ĐẶT VÉ & XÁC NHẬN -->
+        <!-- THANH TÓM TẮT & NÚT MỞ POPUP ĐẶT VÉ -->
         <div class="card shadow-sm border-success">
             <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
-                    <div class="text-muted small">Hành khách: <strong>{{ current_user.name }}</strong> ({{ current_user.phone or current_user.username }})</div>
+                    <div class="text-muted small">Tài khoản đặt vé: <strong>{{ current_user.name }}</strong></div>
                     <div class="fs-5 mt-1">
                         Ghế đã chọn: <strong id="selectedSeatLabel" class="text-primary">Chưa chọn ghế</strong>
                          | 
                         Tổng thanh toán: <strong id="totalPriceLabel" class="text-danger">0 VNĐ</strong>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-success btn-lg px-4 fw-semibold">
-                    Xác nhận đặt vé
+                <button type="button" id="openPassengerModalBtn" class="btn btn-success btn-lg px-4 fw-semibold">
+                    Đặt vé
                 </button>
+            </div>
+        </div>
+
+        <!-- POPUP NHẬP THÔNG TIN HÀNH KHÁCH (CUSTOMER) -->
+        <div class="modal fade" id="passengerModal" tabindex="-1" aria-labelledby="passengerModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold" id="passengerModalLabel">Thông tin hành khách đi máy bay</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-light border small mb-3">
+                            <div>Chuyến bay: <strong>{{ outbound.flight.flight_code }}</strong></div>
+                            <div>Ghế đã chọn: <strong id="modalSeatSummary" class="text-primary"></strong></div>
+                            <div>Giá vé: <strong id="modalPriceSummary" class="text-danger"></strong></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Họ và tên hành khách <span class="text-danger">*</span></label>
+                            <input type="text" name="passenger_name" id="passengerNameInput" class="form-control"
+                                   placeholder="VD: Nguyễn Văn A" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="tel" name="passenger_phone" id="passengerPhoneInput" class="form-control"
+                                   placeholder="VD: 0912345678" maxlength="15" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success fw-semibold px-4">
+                            Xác nhận đặt vé
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </form>
@@ -106,6 +142,9 @@
     const outboundSeatInput = document.getElementById('outboundSeatInput');
     const selectedSeatLabel = document.getElementById('selectedSeatLabel');
     const totalPriceLabel = document.getElementById('totalPriceLabel');
+    const modalSeatSummary = document.getElementById('modalSeatSummary');
+    const modalPriceSummary = document.getElementById('modalPriceSummary');
+    const openPassengerModalBtn = document.getElementById('openPassengerModalBtn');
 
     seatButtons.forEach(btn => {
         btn.addEventListener('click', function () {
@@ -121,17 +160,25 @@
             this.classList.remove('btn-outline-primary', 'btn-outline-warning', 'text-dark');
             this.classList.add('btn-success', 'text-white');
 
+            const seatText = `${this.dataset.seatNumber} (${this.dataset.seatClass})`;
+            const priceText = `${parseInt(this.dataset.seatPrice).toLocaleString('vi-VN')} VNĐ`;
+
             outboundSeatInput.value = this.dataset.seatId;
-            selectedSeatLabel.textContent = `${this.dataset.seatNumber} (${this.dataset.seatClass})`;
-            totalPriceLabel.textContent = `${parseInt(this.dataset.seatPrice).toLocaleString('vi-VN')} VNĐ`;
+            selectedSeatLabel.textContent = seatText;
+            totalPriceLabel.textContent = priceText;
+            modalSeatSummary.textContent = seatText;
+            modalPriceSummary.textContent = priceText;
         });
     });
 
-    document.getElementById('bookingForm').addEventListener('submit', function (e) {
+    openPassengerModalBtn.addEventListener('click', function () {
         if (!outboundSeatInput.value) {
-            e.preventDefault();
-            alert('Vui lòng chọn 1 ghế trống trước khi xác nhận đặt vé!');
+            alert('Vui lòng chọn 1 ghế trống trước khi bấm Đặt vé!');
+            return;
         }
+        const modalEl = document.getElementById('passengerModal');
+        const passengerModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        passengerModal.show();
     });
 </script>
 {% endblock %}

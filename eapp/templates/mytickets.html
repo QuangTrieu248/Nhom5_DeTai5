@@ -29,8 +29,9 @@
                     <tr>
                         <th>Mã vé</th>
                         <th>Chuyến bay</th>
-                        <th>Hãng hàng không</th>
                         <th>Tuyến bay</th>
+                        <th>Hành khách</th>
+                        <th>SĐT</th>
                         <th>Ghế / Hạng ghế</th>
                         <th>Giá vé</th>
                         <th>Thời gian đặt</th>
@@ -41,8 +42,9 @@
                     <tr>
                         <td class="fw-bold">#{{ t.id }}</td>
                         <td class="fw-bold text-primary">{{ t.flight.flight_code }}</td>
-                        <td>{{ t.flight.airline.name }}</td>
                         <td>{{ t.flight.flight_route.name }}</td>
+                        <td class="fw-semibold">{{ t.customer.name }}</td>
+                        <td>{{ t.customer.phone }}</td>
                         <td>
                             <strong>{{ t.seat.seat_number }}</strong>
                             ({{ 'Thương gia' if t.seat.seat_class.name == 'BUSINESS' else 'Phổ thông' }})
@@ -52,7 +54,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             Bạn chưa có vé nào. Hãy tìm kiếm chuyến bay và đặt vé ngay!
                         </td>
                     </tr>

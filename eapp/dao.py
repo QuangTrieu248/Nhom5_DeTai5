@@ -20,7 +20,8 @@ from eapp.models import (
     User,
     UserRole,
     app,
-    db
+    db,
+    Customer
 )
 from flask import render_template, request
 from sqlalchemy import func
@@ -374,8 +375,8 @@ def create_scheduled_flight(flight_code, airline_id, flight_route_id, base_price
         db.session.rollback()
         return False, f"Lỗi lưu cơ sở dữ liệu: {str(e)}"
 
-def sell_counter_ticket(flight_id, seat_id, passenger_name, passenger_phone):
-    """Nhân viên bán vé trực tiếp tại quầy và kiểm tra hạn chót bán vé (ticket_sale_deadline)."""
+def sell_counter_ticket(flight_id, seat_id, passenger_name, passenger_phone, staff_id=None):
+    """Nhân viên bán vé trực tiếp tại quầy và lưu hành khách vào bảng Customer."""
     passenger_name = (passenger_name or "").strip()
     passenger_phone = (passenger_phone or "").strip()
 
@@ -402,25 +403,13 @@ def sell_counter_ticket(flight_id, seat_id, passenger_name, passenger_phone):
         return False, f"Ghế {seat.seat_number} trên chuyến {flight.flight_code} đã có hành khách đặt!"
 
     try:
-        customer = User.query.filter_by(phone=passenger_phone).first()
+        customer = Customer.query.filter_by(name=passenger_name, phone=passenger_phone).first()
         if not customer:
-            base_username = f"khach_{passenger_phone}"
-            username = base_username
-            suffix = 1
-            while User.query.filter_by(username=username).first():
-                username = f"{base_username}_{suffix}"
-                suffix += 1
-
-            customer = User(
-                name=passenger_name,
-                username=username,
-                phone=passenger_phone,
-                password=hashlib.md5("123456".encode("utf-8")).hexdigest(),
-                user_role=UserRole.USER
-            )
+            customer = Customer(name=passenger_name, phone=passenger_phone)
             db.session.add(customer)
             db.session.flush()
 
+        account_id = staff_id if staff_id else User.query.first().id
         multiplier = reg.get_multiplier(seat.seat_class) if reg else Decimal("1.00")
         final_price = flight.base_price * multiplier
 
@@ -429,7 +418,8 @@ def sell_counter_ticket(flight_id, seat_id, passenger_name, passenger_phone):
             booking_time=datetime.now(),
             flight_id=flight.id,
             seat_id=seat.id,
-            user_id=customer.id
+            user_id=account_id,
+            customer_id=customer.id
         )
         db.session.add(ticket)
         db.session.flush()
