@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 from decimal import Decimal
 # from xmlrpc.client import DateTime
 from flask_login import UserMixin
@@ -10,7 +11,7 @@ from enum import Enum as UserRoleEnum
 from enum import Enum as SeatClassEnum
 
 
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, CheckConstraint, DateTime, UniqueConstraint, Numeric
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, CheckConstraint, DateTime, UniqueConstraint, Numeric, text
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
@@ -26,6 +27,9 @@ class UserRole(UserRoleEnum):
     USER = 1
     STAFF = 2
     ADMIN = 3
+
+
+UserRoleEnum = UserRole
 
 
 class User(BaseModel, UserMixin):
@@ -66,11 +70,17 @@ class Airport(BaseModel):
     name = Column(String(100), nullable=False)
     address = Column(String(500), nullable=False)
 
+    def __str__(self):
+        return self.name
+
 
 class Airline(BaseModel):
     name = Column(String(100), unique=True, nullable=False)
     airplanes_relation = relationship('Airplane', backref='airline', lazy=True)
     flight_relation = relationship('Flight', backref='airline', lazy=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Airplane(BaseModel):
@@ -78,12 +88,19 @@ class Airplane(BaseModel):
     airline_id = Column(Integer, ForeignKey(Airline.id), nullable=False) # Bổ sung dòng này
     segments_relation = relationship('FlightSegment', backref='airplane', lazy=True)
 
+    def __str__(self):
+        return f"{self.airline.name} ({self.number_seat} ghế)" if self.airline else f"Máy bay #{self.id}"
+
 
 class FlightRoute(BaseModel):
     name = Column(String(100), nullable=False)
     airline_id = Column(Integer, ForeignKey(Airline.id), nullable=False)
     flights_relation = relationship('Flight', backref='flight_route', lazy=True)
     airport_relation = relationship('AirportFlightRoute', backref='flight_route', lazy=True)
+    airline = relationship('Airline', backref='flight_routes', lazy=True)
+
+    def __str__(self):
+        return self.name
 
 
 class AirportFlightRoute(BaseModel):
@@ -107,6 +124,9 @@ class Flight(BaseModel):
 
     segments_relation = relationship('FlightSegment', backref='flight', lazy=True)
 
+    def __str__(self):
+        return self.flight_code
+
 
 class FlightSegment(BaseModel):
     departure_time = Column(DateTime, nullable=False)
@@ -115,7 +135,6 @@ class FlightSegment(BaseModel):
 
     flight_id = Column(Integer, ForeignKey(Flight.id), nullable=False)
     airplane_id = Column(Integer, ForeignKey(Airplane.id), nullable=False)
-
     airport_relation = relationship('AirportFlightSegment', backref='flight_segment', lazy=True)
 
     __table_args__ = (
@@ -228,6 +247,17 @@ def seed_flight_data():
             return
 
         try:
+            # 0. Tài khoản Admin mặc định
+            if not User.query.filter_by(username="admin").first():
+                admin_acc = User(
+                    name="Quản trị viên",
+                    username="admin",
+                    phone="0900000000",
+                    password=hashlib.md5("123456".encode("utf-8")).hexdigest(),
+                    user_role=UserRole.ADMIN
+                )
+                db.session.add(admin_acc)
+
             # 1. Quy định hệ thống (dùng tính giá khi chọn ghế)
             reg = Regulation(
                 max_airports=10,
@@ -433,6 +463,10 @@ def seed_flight_data():
 
 
 if __name__ == '__main__':
-      with app.app_context():
-        db.drop_all()
+    with app.app_context():
+        db.session.execute(text('SET FOREIGN_KEY_CHECKS = 0;'))
+        for table_name in db.inspect(db.engine).get_table_names():
+            db.session.execute(text(f'DROP TABLE IF EXISTS `{table_name}`;'))
+        db.session.execute(text('SET FOREIGN_KEY_CHECKS = 1;'))
+        db.session.commit()
         seed_flight_data()

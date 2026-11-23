@@ -1,0 +1,18 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container-fluid">
+    {% if current_user.is_authenticated %}
+    <div class="alert alert-success">
+        <h4>Chào mừng quản trị viên <strong>{{ current_user.name }}</strong>!</h4>
+        <p>Chọn các danh mục trên thanh menu phía trên để quản lý hệ thống PlanePlan.</p>
+        <a href="{{ url_for('home_view') }}" class="btn btn-default btn-sm">Về trang chủ</a>
+        <a href="{{ url_for('logout_view') }}" class="btn btn-danger btn-sm">Đăng xuất</a>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        Bạn chưa đăng nhập với quyền quản trị viên.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

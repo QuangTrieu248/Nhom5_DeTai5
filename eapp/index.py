@@ -1,11 +1,22 @@
-from flask import render_template, request, redirect, url_for, flash, Blueprint
+from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from flask_login import login_user, logout_user, login_required, current_user
 from cloudinary.exceptions import Error as CloudinaryError
 from sqlalchemy.orm import joinedload
 
 from eapp import app, dao, login, db
+from eapp import app, dao, login, db, admin
 from eapp.models import Flight, FlightSegment, Ticket, Regulation, User, UserRole, Seat, SeatClass, BoardingPass
+
+
+def staff_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.user_role not in [UserRole.STAFF, UserRole.ADMIN]:
+            return abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 @login.user_loader
 def load_user(user_id):
@@ -19,6 +30,7 @@ def home_view():
 
 
 @app.route('/staffpage')
+@staff_required
 def staff_view():
     return render_template('staffpage.html')
 
@@ -32,6 +44,7 @@ def flight_page_view():
     day_go = request.args.get("dayGo")
     day_back = request.args.get("dayBack")
 
+    outbound_flights = []
     return_flights = []
 
     if noi_di and noi_den and day_go:
@@ -51,6 +64,14 @@ def flight_page_view():
         return_flights=return_flights
     )
 
+def get_flight_seat_data(flight_id):
+    """Lấy thông tin chuyến bay, danh sách chặng và tập ID các ghế đã bị đặt."""
+    if not flight_id:
+        return None
+
+    flight = Flight.query.get(flight_id)
+    if not flight:
+        return None
 
 # TRANG DAT VE VA NHAP THONG TIN
 from eapp.models import Customer, CustomerPhone  # Import thêm 2 model mới
@@ -60,6 +81,7 @@ def booking_view():
     eco_mult = float(reg.economy_multiplier) if reg else 1.0
     bus_mult = float(reg.business_multiplier) if reg else 1.5
 
+    # --- XỬ LÝ LƯU VÉ KHI KHÁCH BẤM XÁC NHẬN ĐẶT ---
     if request.method == "POST":
         outbound_id = request.form.get("outbound_id", type=int)
         outbound_seat_id = request.form.get("outbound_seat_id", type=int)
@@ -89,6 +111,7 @@ def booking_view():
             db.session.add(user)
             db.session.flush()
 
+        # Gom các chặng cần xuất vé (1 phần tử nếu một chiều, 2 phần tử nếu khứ hồi)
         legs = [(outbound_id, outbound_seat_id)]
         if return_id and return_seat_id:
             legs.append((return_id, return_seat_id))
@@ -112,6 +135,7 @@ def booking_view():
                 flight = Flight.query.get_or_404(f_id)
                 seat = Seat.query.get_or_404(s_id)
 
+                # Tính giá vé chính xác ở Backend
                 multiplier = (
                     reg.business_multiplier
                     if seat.seat_class == SeatClass.BUSINESS
@@ -119,6 +143,7 @@ def booking_view():
                 )
                 final_price = flight.base_price * multiplier
 
+                # 1. Tạo Ticket (Ràng buộc UNIQUE(flight_id, seat_id) sẽ chặn nếu trùng ghế)
                 ticket = Ticket(
                     price=final_price,
                     flight_id=flight.id,
@@ -127,8 +152,9 @@ def booking_view():
                     customer_id=customer.id
                 )
                 db.session.add(ticket)
-                db.session.flush()
+                db.session.flush()  # Đẩy xuống DB để kiểm tra trùng ghế và lấy ticket.id
 
+                # 2. Tự động tạo BoardingPass cho TẤT CẢ các chặng của chuyến bay này
                 segments = (
                     FlightSegment.query
                     .filter_by(flight_id=flight.id)
@@ -143,6 +169,7 @@ def booking_view():
 
                 created_tickets.append(ticket)
 
+            # Lưu toàn bộ giao dịch
             db.session.commit()
             flash(
                 f"Đặt vé thành công cho hành khách {customer.name}! "
@@ -162,9 +189,7 @@ def booking_view():
             flash(f"Có lỗi xảy ra khi đặt vé: {str(e)}", "danger")
             return redirect(url_for("booking_view", outbound_id=outbound_id, return_id=return_id))
 
-
-
-    # --- PHẦN GET GIỮ NGUYÊN ---
+    # --- HIỂN THỊ TRANG CHỌN GHẾ (GET) ---
     outbound_id = request.args.get("outbound_id", type=int)
     return_id = request.args.get("return_id", type=int)
 
@@ -251,7 +276,7 @@ def register_view():
     return render_template('register.html')
 
 
-@app.route('/register', methods=['post'])
+@app.route('/register', methods=['POST'])
 def register_process():
     name = request.form.get('fullname', '').strip()
     username = request.form.get('username', '').strip()
@@ -278,11 +303,16 @@ def register_process():
                 avatar=avatar_file
             )
             return redirect(url_for('login_view'))
-        except CloudinaryError:
+        except CloudinaryError as ex:
+            print("LỖI CLOUDINARY:", ex)
             err_msg = 'Lỗi tải ảnh đại diện, vui lòng thử lại!'
-        except IntegrityError:
+        except IntegrityError as ex:
+            db.session.rollback()
+            print("LỖI TRÙNG DỮ LIỆU SQL:", ex)
             err_msg = 'Tên tài khoản hoặc số điện thoại đã tồn tại!'
-        except SQLAlchemyError:
+        except SQLAlchemyError as ex:
+            db.session.rollback()
+            print("LỖI DATABASE SQL:", ex)
             err_msg = 'Lỗi kết nối cơ sở dữ liệu, vui lòng thử lại sau!'
 
     return render_template('register.html', err_msg=err_msg)
@@ -293,7 +323,7 @@ def login_view():
     return render_template('login.html')
 
 
-@app.route('/login', methods=['post'])
+@app.route('/login', methods=['POST'])
 def login_process():
     username = request.form.get('username', '').strip()
     password = request.form.get('password')
@@ -304,6 +334,10 @@ def login_process():
         user = dao.check_login(username=username, password=password)
         if user:
             login_user(user=user)
+            if user.user_role == UserRole.ADMIN:
+                return redirect('/admin')
+            elif user.user_role == UserRole.STAFF:
+                return redirect(url_for('staff_view'))
             return redirect(url_for('home_view'))
         else:
             err_msg = 'Tên đăng nhập hoặc mật khẩu không chính xác!'
