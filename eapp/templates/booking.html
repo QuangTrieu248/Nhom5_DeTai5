@@ -1,0 +1,137 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Đặt vé chuyến bay{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-primary fw-bold mb-0">ĐẶT VÉ TRỰC TUYẾN</h3>
+        <a href="{{ url_for('flight_page_view') }}" class="btn btn-outline-secondary btn-sm">
+            ← Quay lại danh sách chuyến bay
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('booking_view') }}" id="bookingForm">
+        <input type="hidden" name="outbound_id" value="{{ outbound.flight.id }}">
+        <input type="hidden" name="outbound_seat_id" id="outboundSeatInput" required>
+
+        <!-- THÔNG TIN CHUYẾN ĐI -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    Chuyến bay: {{ outbound.flight.flight_code }} ({{ outbound.flight.airline.name }})
+                </span>
+                <span>Giá cơ bản: <strong>{{ "{:,.0f}".format(outbound.flight.base_price) }} VNĐ</strong></span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="fw-bold">Lộ trình các chặng bay:</h6>
+                    {% for s in outbound.segments %}
+                    <div class="small text-muted">
+                        <span class="badge bg-secondary">Chặng {{ s.sequence }}</span>
+                        <strong>{{ s.dep_name }}</strong> → <strong>{{ s.arr_name }}</strong>
+                        ({{ s.departure_time.strftime('%d/%m/%Y %H:%M') }} - {{ s.arrival_time.strftime('%H:%M') }})
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <hr>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <h6 class="fw-bold mb-0">Chọn ghế ngồi:</h6>
+                    <div class="small">
+                        <span class="badge bg-light text-dark border">Phổ thông (x{{ eco_mult }})</span>
+                        <span class="badge bg-warning text-dark">Thương gia (x{{ bus_mult }})</span>
+                        <span class="badge bg-success">Đang chọn</span>
+                        <span class="badge bg-secondary">Đã đặt</span>
+                    </div>
+                </div>
+
+                <div class="row g-2" id="outboundSeatGrid">
+                    {% for seat in seats %}
+                        {% set is_booked = seat.id in outbound.booked_seat_ids %}
+                        {% set is_bus = (seat.seat_class.name == 'BUSINESS') %}
+                        {% set seat_price = (outbound.flight.base_price|float * (bus_mult if is_bus else eco_mult))|int %}
+                        <div class="col-4 col-sm-3 col-md-2">
+                            <button type="button"
+                                    class="btn w-100 py-2 seat-btn {{ 'btn-secondary disabled' if is_booked else ('btn-outline-warning text-dark' if is_bus else 'btn-outline-primary') }}"
+                                    data-seat-id="{{ seat.id }}"
+                                    data-seat-number="{{ seat.seat_number }}"
+                                    data-seat-class="{{ 'Thương gia' if is_bus else 'Phổ thông' }}"
+                                    data-seat-price="{{ seat_price }}"
+                                    {% if is_booked %}disabled{% endif %}>
+                                <div class="fw-bold">{{ seat.seat_number }}</div>
+                                <div style="font-size: 0.72rem;">
+                                    {{ 'Đã đặt' if is_booked else ("{:,.0f}đ".format(seat_price)) }}
+                                </div>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TÓM TẮT ĐẶT VÉ & XÁC NHẬN -->
+        <div class="card shadow-sm border-success">
+            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="text-muted small">Hành khách: <strong>{{ current_user.name }}</strong> ({{ current_user.phone or current_user.username }})</div>
+                    <div class="fs-5 mt-1">
+                        Ghế đã chọn: <strong id="selectedSeatLabel" class="text-primary">Chưa chọn ghế</strong>
+                         | 
+                        Tổng thanh toán: <strong id="totalPriceLabel" class="text-danger">0 VNĐ</strong>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success btn-lg px-4 fw-semibold">
+                    Xác nhận đặt vé
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    const seatButtons = document.querySelectorAll('.seat-btn:not([disabled])');
+    const outboundSeatInput = document.getElementById('outboundSeatInput');
+    const selectedSeatLabel = document.getElementById('selectedSeatLabel');
+    const totalPriceLabel = document.getElementById('totalPriceLabel');
+
+    seatButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            seatButtons.forEach(b => {
+                b.classList.remove('btn-success', 'text-white');
+                if (b.dataset.seatClass === 'Thương gia') {
+                    b.classList.add('btn-outline-warning', 'text-dark');
+                } else {
+                    b.classList.add('btn-outline-primary');
+                }
+            });
+
+            this.classList.remove('btn-outline-primary', 'btn-outline-warning', 'text-dark');
+            this.classList.add('btn-success', 'text-white');
+
+            outboundSeatInput.value = this.dataset.seatId;
+            selectedSeatLabel.textContent = `${this.dataset.seatNumber} (${this.dataset.seatClass})`;
+            totalPriceLabel.textContent = `${parseInt(this.dataset.seatPrice).toLocaleString('vi-VN')} VNĐ`;
+        });
+    });
+
+    document.getElementById('bookingForm').addEventListener('submit', function (e) {
+        if (!outboundSeatInput.value) {
+            e.preventDefault();
+            alert('Vui lòng chọn 1 ghế trống trước khi xác nhận đặt vé!');
+        }
+    });
+</script>
+{% endblock %}

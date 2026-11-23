@@ -1,7 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
-
-from eapp.models import Airport, Airplane, User, db
 import cloudinary.uploader
 import hashlib
 from eapp.models import (
@@ -10,15 +8,19 @@ from eapp.models import (
     Airport,
     AirportFlightRoute,
     AirportFlightSegment,
+    AirportRole,
     BoardingPass,
     Flight,
     FlightRoute,
     FlightSegment,
     Regulation,
     Seat,
+    SeatClass,
     Ticket,
     User,
-    db, AirportRole, app
+    UserRole,
+    app,
+    db
 )
 from flask import render_template, request
 from sqlalchemy import func
@@ -137,7 +139,10 @@ def get_schedule_form_data():
     airlines = Airline.query.order_by(Airline.name.asc()).all()
     airplanes = Airplane.query.all()
     routes = FlightRoute.query.all()
+    all_seats = Seat.query.order_by(Seat.seat_number.asc()).all()
 
+    eco_mult = float(reg.economy_multiplier) if reg else 1.0
+    bus_mult = float(reg.business_multiplier) if reg else 1.5
     airport_map = {a.id: a.name for a in airports}
 
     routes_data = []
@@ -165,6 +170,8 @@ def get_schedule_form_data():
 
     flights = Flight.query.order_by(Flight.id.desc()).all()
     scheduled_flights = []
+    counter_flights_data = []
+
     for f in flights:
         segs = sorted(f.segments_relation, key=lambda s: s.sequence)
         seg_details = []
@@ -179,6 +186,7 @@ def get_schedule_form_data():
                 "arrival_time": s.arrival_time,
                 "airplane": f"#{s.airplane_id} ({s.airplane.number_seat} ghế)" if s.airplane else "N/A"
             })
+
         scheduled_flights.append({
             "id": f.id,
             "flight_code": f.flight_code,
@@ -188,13 +196,38 @@ def get_schedule_form_data():
             "segments": seg_details
         })
 
+        # Dữ liệu chuyến bay + danh sách ghế trống cho tab Bán vé tại quầy
+        booked_ids = {t.seat_id for t in Ticket.query.filter_by(flight_id=f.id).all()}
+        base_p = float(f.base_price)
+        seats_info = []
+        for st in all_seats:
+            is_bus = (st.seat_class == SeatClass.BUSINESS)
+            seats_info.append({
+                "id": st.id,
+                "seat_number": st.seat_number,
+                "seat_class": "Thương gia" if is_bus else "Phổ thông",
+                "price": int(base_p * (bus_mult if is_bus else eco_mult)),
+                "is_booked": st.id in booked_ids
+            })
+
+        dep_time_str = segs[0].departure_time.strftime("%d/%m/%Y %H:%M") if segs else "Chưa có lịch"
+        counter_flights_data.append({
+            "id": f.id,
+            "label": f"{f.flight_code} | {f.flight_route.name if f.flight_route else ''} | Khởi hành: {dep_time_str}",
+            "seats": seats_info
+        })
+
+    recent_tickets = Ticket.query.order_by(Ticket.id.desc()).limit(15).all()
+
     return {
         "reg": reg,
         "airports": airports,
         "airlines": airlines,
         "routes_data": routes_data,
         "airplanes_data": airplanes_data,
-        "scheduled_flights": scheduled_flights
+        "scheduled_flights": scheduled_flights,
+        "counter_flights_data": counter_flights_data,
+        "recent_tickets": recent_tickets
     }
 
 
@@ -340,3 +373,120 @@ def create_scheduled_flight(flight_code, airline_id, flight_route_id, base_price
     except Exception as e:
         db.session.rollback()
         return False, f"Lỗi lưu cơ sở dữ liệu: {str(e)}"
+
+def sell_counter_ticket(flight_id, seat_id, passenger_name, passenger_phone):
+    """Nhân viên bán vé trực tiếp tại quầy và kiểm tra hạn chót bán vé (ticket_sale_deadline)."""
+    passenger_name = (passenger_name or "").strip()
+    passenger_phone = (passenger_phone or "").strip()
+
+    if not flight_id or not seat_id or not passenger_name or not passenger_phone:
+        return False, "Vui lòng nhập đầy đủ chuyến bay, ghế ngồi, họ tên và số điện thoại hành khách!"
+
+    flight = Flight.query.get(flight_id)
+    seat = Seat.query.get(seat_id)
+    if not flight or not seat:
+        return False, "Chuyến bay hoặc ghế ngồi không tồn tại!"
+
+    segments = sorted(flight.segments_relation, key=lambda s: s.sequence)
+    if not segments:
+        return False, "Chuyến bay chưa có lịch trình chặng bay!"
+
+    reg = Regulation.query.first()
+    sale_deadline = reg.ticket_sale_deadline if reg else 4
+    first_dep = segments[0].departure_time
+
+    if first_dep - datetime.now() < timedelta(hours=sale_deadline):
+        return False, f"Đã quá hạn bán vé tại quầy (phải bán trước giờ khởi hành ít nhất {sale_deadline} giờ)!"
+
+    if Ticket.query.filter_by(flight_id=flight.id, seat_id=seat.id).first():
+        return False, f"Ghế {seat.seat_number} trên chuyến {flight.flight_code} đã có hành khách đặt!"
+
+    try:
+        customer = User.query.filter_by(phone=passenger_phone).first()
+        if not customer:
+            base_username = f"khach_{passenger_phone}"
+            username = base_username
+            suffix = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{base_username}_{suffix}"
+                suffix += 1
+
+            customer = User(
+                name=passenger_name,
+                username=username,
+                phone=passenger_phone,
+                password=hashlib.md5("123456".encode("utf-8")).hexdigest(),
+                user_role=UserRole.USER
+            )
+            db.session.add(customer)
+            db.session.flush()
+
+        multiplier = reg.get_multiplier(seat.seat_class) if reg else Decimal("1.00")
+        final_price = flight.base_price * multiplier
+
+        ticket = Ticket(
+            price=final_price,
+            booking_time=datetime.now(),
+            flight_id=flight.id,
+            seat_id=seat.id,
+            user_id=customer.id
+        )
+        db.session.add(ticket)
+        db.session.flush()
+
+        for seg in segments:
+            db.session.add(BoardingPass(
+                ticket_id=ticket.id,
+                flight_segment_id=seg.id
+            ))
+
+        db.session.commit()
+        return True, f"Xuất vé #{ticket.id} thành công cho khách {customer.name} (Ghế {seat.seat_number} - {int(final_price):,} đ)!"
+    except Exception as e:
+        db.session.rollback()
+        return False, f"Lỗi khi xuất vé: {str(e)}"
+
+# ======= BÁO CÁO THỐNG KÊ DOANH THU THEO THÁNG =========
+
+def get_monthly_route_stats(month=None, year=None):
+    """Thống kê doanh thu, số lượt bay và tỷ lệ (%) theo từng tuyến bay trong tháng được chọn."""
+    now = datetime.now()
+    if not month:
+        month = now.month
+    if not year:
+        year = now.year
+
+    rows = (
+        db.session.query(
+            FlightRoute.id,
+            FlightRoute.name.label('route_name'),
+            func.coalesce(func.sum(Ticket.price), 0).label('revenue'),
+            func.count(func.distinct(Ticket.flight_id)).label('flight_count')
+        )
+        .outerjoin(Flight, Flight.flight_route_id == FlightRoute.id)
+        .outerjoin(
+            Ticket,
+            db.and_(
+                Ticket.flight_id == Flight.id,
+                func.extract('month', Ticket.booking_time) == month,
+                func.extract('year', Ticket.booking_time) == year
+            )
+        )
+        .group_by(FlightRoute.id, FlightRoute.name)
+        .order_by(func.coalesce(func.sum(Ticket.price), 0).desc(), FlightRoute.id.asc())
+        .all()
+    )
+
+    total_revenue = sum(float(r.revenue) for r in rows)
+    stats = []
+    for r in rows:
+        rev = float(r.revenue)
+        ratio = round((rev / total_revenue) * 100, 2) if total_revenue > 0 else 0.0
+        stats.append({
+            "route_name": r.route_name,
+            "revenue": rev,
+            "flight_count": int(r.flight_count),
+            "ratio": ratio
+        })
+
+    return stats, total_revenue

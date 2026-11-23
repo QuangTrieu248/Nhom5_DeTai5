@@ -174,7 +174,7 @@ class Ticket(BaseModel):
     #
     price = Column(Numeric(12, 0), nullable=False)  # giá chốt lúc đặt
     #
-    booking_time = Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    booking_time = Column(db.DateTime, nullable=False, default=datetime.now)
 
     flight_id = Column(Integer, ForeignKey("flight.id"), nullable=False)
     seat_id = Column(Integer, ForeignKey("seat.id"), nullable=False)
@@ -255,10 +255,10 @@ def seed_flight_data():
             # 1. Quy định hệ thống (dùng tính giá khi chọn ghế)
             reg = Regulation(
                 max_airports=10,
-                min_flight_time=45,
+                min_flight_time=30,
                 max_intermediate_airports=2,
-                min_stop_time=30,
-                max_stop_time=240,
+                min_stop_time=20,
+                max_stop_time=30,
                 ticket_sale_deadline=4,
                 booking_deadline=12,
                 economy_multiplier=Decimal("1.00"),

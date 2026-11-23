@@ -1,0 +1,65 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Vé đã đặt của tôi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-primary fw-bold mb-0">VÉ ĐÃ ĐẶT CỦA TÔI</h3>
+        <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm">
+            + Đặt thêm vé mới
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã vé</th>
+                        <th>Chuyến bay</th>
+                        <th>Hãng hàng không</th>
+                        <th>Tuyến bay</th>
+                        <th>Ghế / Hạng ghế</th>
+                        <th>Giá vé</th>
+                        <th>Thời gian đặt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tickets %}
+                    <tr>
+                        <td class="fw-bold">#{{ t.id }}</td>
+                        <td class="fw-bold text-primary">{{ t.flight.flight_code }}</td>
+                        <td>{{ t.flight.airline.name }}</td>
+                        <td>{{ t.flight.flight_route.name }}</td>
+                        <td>
+                            <strong>{{ t.seat.seat_number }}</strong>
+                            ({{ 'Thương gia' if t.seat.seat_class.name == 'BUSINESS' else 'Phổ thông' }})
+                        </td>
+                        <td class="fw-semibold text-success">{{ "{:,.0f}".format(t.price) }} VNĐ</td>
+                        <td>{{ t.booking_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Bạn chưa có vé nào. Hãy tìm kiếm chuyến bay và đặt vé ngay!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
