@@ -25,18 +25,19 @@
     <form method="POST" action="{{ url_for('booking_view') }}" id="bookingForm">
         <input type="hidden" name="outbound_id" value="{{ outbound.flight.id }}">
         <input type="hidden" name="outbound_seat_id" id="outboundSeatInput" required>
+        <input type="hidden" name="inbound_seat_id" id="inboundSeatInput">
 
-        <!-- THÔNG TIN CHUYẾN BAY & SƠ ĐỒ GHẾ -->
+        <!-- 1. CHUYẾN BAY CHIỀU ĐI -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">
-                    Chuyến bay: {{ outbound.flight.flight_code }} ({{ outbound.flight.airline.name }})
+                    CHUYẾN ĐI: {{ outbound.flight.flight_code }} ({{ outbound.flight.airline.name }})
                 </span>
                 <span>Giá cơ bản: <strong>{{ "{:,.0f}".format(outbound.flight.base_price) }} VNĐ</strong></span>
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <h6 class="fw-bold">Lộ trình các chặng bay:</h6>
+                    <h6 class="fw-bold">Lộ trình các chặng bay (Chiều đi):</h6>
                     {% for s in outbound.segments %}
                     <div class="small text-muted">
                         <span class="badge bg-secondary">Chặng {{ s.sequence }}</span>
@@ -49,7 +50,7 @@
                 <hr>
 
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-                    <h6 class="fw-bold mb-0">Chọn ghế ngồi:</h6>
+                    <h6 class="fw-bold mb-0">Chọn ghế ngồi chiều đi:</h6>
                     <div class="small">
                         <span class="badge bg-light text-dark border">Phổ thông (x{{ eco_mult }})</span>
                         <span class="badge bg-warning text-dark">Thương gia (x{{ bus_mult }})</span>
@@ -65,7 +66,7 @@
                         {% set seat_price = (outbound.flight.base_price|float * (bus_mult if is_bus else eco_mult))|int %}
                         <div class="col-4 col-sm-3 col-md-2">
                             <button type="button"
-                                    class="btn w-100 py-2 seat-btn {{ 'btn-secondary disabled' if is_booked else ('btn-outline-warning text-dark' if is_bus else 'btn-outline-primary') }}"
+                                    class="btn w-100 py-2 out-seat-btn {{ 'btn-secondary disabled' if is_booked else ('btn-outline-warning text-dark' if is_bus else 'btn-outline-primary') }}"
                                     data-seat-id="{{ seat.id }}"
                                     data-seat-number="{{ seat.seat_number }}"
                                     data-seat-class="{{ 'Thương gia' if is_bus else 'Phổ thông' }}"
@@ -82,14 +83,75 @@
             </div>
         </div>
 
-        <!-- THANH TÓM TẮT & NÚT MỞ POPUP ĐẶT VÉ -->
+        <!-- 2. CHUYẾN BAY CHIỀU VỀ (KHỨ HỒI) -->
+        <div class="card shadow-sm mb-4 border-info">
+            <div class="card-header bg-info bg-opacity-25 d-flex justify-content-between align-items-center">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" name="is_round_trip" value="1"
+                           id="roundTripToggle"
+                           {% if preselected_inbound_id and return_flights_json %}checked{% endif %}
+                           {% if not return_flights_json %}disabled{% endif %}>
+                    <label class="form-check-label fw-bold text-dark" for="roundTripToggle">
+                        Đặt vé khứ hồi (Tuyến ngược lại:
+                        {{ outbound.segments[-1].arr_name }} → {{ outbound.segments[0].dep_name }})
+                    </label>
+                </div>
+                {% if not return_flights_json %}
+                <span class="badge bg-secondary">Hiện chưa có chuyến bay chiều về phù hợp</span>
+                {% else %}
+                <span class="badge bg-primary">Có {{ return_flights_json|length }} chuyến về khả dụng</span>
+                {% endif %}
+            </div>
+
+            <div class="card-body d-none" id="inboundSection">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Chọn chuyến bay chiều về <span class="text-danger">*</span></label>
+                    <select name="inbound_id" id="inboundFlightSelect" class="form-select">
+                        <option value="">-- Chọn chuyến bay chiều về --</option>
+                        {% for rf in return_flights_json %}
+                        <option value="{{ rf.id }}" {% if preselected_inbound_id == rf.id %}selected{% endif %}>
+                            {{ rf.flight_code }} ({{ rf.airline_name }}) | {{ rf.route_name }} |
+                            Khởi hành: {{ rf.segments[0].dep_time }} | Giá cơ bản: {{ "{:,.0f}".format(rf.base_price) }} VNĐ
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="inboundDetailsBox" class="d-none">
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Lộ trình các chặng bay (Chiều về):</h6>
+                        <div id="inboundSegmentsList"></div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <h6 class="fw-bold mb-0">Chọn ghế ngồi chiều về:</h6>
+                        <div class="small">
+                            <span class="badge bg-light text-dark border">Phổ thông (x{{ eco_mult }})</span>
+                            <span class="badge bg-warning text-dark">Thương gia (x{{ bus_mult }})</span>
+                            <span class="badge bg-success">Đang chọn</span>
+                            <span class="badge bg-secondary">Đã đặt</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2" id="inboundSeatGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. THANH TÓM TẮT & NÚT ĐẶT VÉ -->
         <div class="card shadow-sm border-success">
             <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
                     <div class="text-muted small">Tài khoản đặt vé: <strong>{{ current_user.name }}</strong></div>
+                    <div class="mt-1">
+                        <span>Chiều đi: <strong id="outSeatLabel" class="text-primary">Chưa chọn ghế</strong></span>
+                        <span id="inSummaryInline" class="d-none">
+                             |  Chiều về: <strong id="inSeatLabel" class="text-info">Chưa chọn ghế</strong>
+                        </span>
+                    </div>
                     <div class="fs-5 mt-1">
-                        Ghế đã chọn: <strong id="selectedSeatLabel" class="text-primary">Chưa chọn ghế</strong>
-                         | 
                         Tổng thanh toán: <strong id="totalPriceLabel" class="text-danger">0 VNĐ</strong>
                     </div>
                 </div>
@@ -99,7 +161,7 @@
             </div>
         </div>
 
-        <!-- POPUP NHẬP THÔNG TIN HÀNH KHÁCH (CUSTOMER) -->
+        <!-- 4. POPUP NHẬP THÔNG TIN HÀNH KHÁCH (CUSTOMER) -->
         <div class="modal fade" id="passengerModal" tabindex="-1" aria-labelledby="passengerModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -109,9 +171,20 @@
                     </div>
                     <div class="modal-body">
                         <div class="alert alert-light border small mb-3">
-                            <div>Chuyến bay: <strong>{{ outbound.flight.flight_code }}</strong></div>
-                            <div>Ghế đã chọn: <strong id="modalSeatSummary" class="text-primary"></strong></div>
-                            <div>Giá vé: <strong id="modalPriceSummary" class="text-danger"></strong></div>
+                            <div>
+                                <strong>Chiều đi ({{ outbound.flight.flight_code }}):</strong>
+                                Ghế <span id="modalOutSeat" class="text-primary fw-bold"></span> -
+                                <span id="modalOutPrice" class="fw-semibold"></span>
+                            </div>
+                            <div id="modalInRow" class="d-none mt-1">
+                                <strong>Chiều về (<span id="modalInFlightCode"></span>):</strong>
+                                Ghế <span id="modalInSeat" class="text-primary fw-bold"></span> -
+                                <span id="modalInPrice" class="fw-semibold"></span>
+                            </div>
+                            <hr class="my-2">
+                            <div class="fs-6">
+                                Tổng cộng: <strong id="modalTotalPrice" class="text-danger"></strong>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -138,17 +211,43 @@
 </div>
 
 <script>
-    const seatButtons = document.querySelectorAll('.seat-btn:not([disabled])');
-    const outboundSeatInput = document.getElementById('outboundSeatInput');
-    const selectedSeatLabel = document.getElementById('selectedSeatLabel');
-    const totalPriceLabel = document.getElementById('totalPriceLabel');
-    const modalSeatSummary = document.getElementById('modalSeatSummary');
-    const modalPriceSummary = document.getElementById('modalPriceSummary');
-    const openPassengerModalBtn = document.getElementById('openPassengerModalBtn');
+    const RETURN_FLIGHTS = {{ return_flights_json | tojson }};
+    const ALL_SEATS = {{ all_seats_json | tojson }};
+    const ECO_MULT = {{ eco_mult }};
+    const BUS_MULT = {{ bus_mult }};
 
-    seatButtons.forEach(btn => {
+    let outPrice = 0;
+    let outSeatText = '';
+    let inPrice = 0;
+    let inSeatText = '';
+    let selectedInboundFlight = null;
+
+    const outboundSeatInput = document.getElementById('outboundSeatInput');
+    const inboundSeatInput = document.getElementById('inboundSeatInput');
+    const roundTripToggle = document.getElementById('roundTripToggle');
+    const inboundSection = document.getElementById('inboundSection');
+    const inboundFlightSelect = document.getElementById('inboundFlightSelect');
+    const inboundDetailsBox = document.getElementById('inboundDetailsBox');
+    const inboundSegmentsList = document.getElementById('inboundSegmentsList');
+    const inboundSeatGrid = document.getElementById('inboundSeatGrid');
+
+    const outSeatLabel = document.getElementById('outSeatLabel');
+    const inSummaryInline = document.getElementById('inSummaryInline');
+    const inSeatLabel = document.getElementById('inSeatLabel');
+    const totalPriceLabel = document.getElementById('totalPriceLabel');
+
+    function updateSummary() {
+        const isRT = roundTripToggle.checked;
+        const total = outPrice + (isRT ? inPrice : 0);
+        totalPriceLabel.textContent = `${total.toLocaleString('vi-VN')} VNĐ`;
+        inSummaryInline.classList.toggle('d-none', !isRT);
+    }
+
+    // --- CHỌN GHẾ CHIỀU ĐI ---
+    const outSeatButtons = document.querySelectorAll('.out-seat-btn:not([disabled])');
+    outSeatButtons.forEach(btn => {
         btn.addEventListener('click', function () {
-            seatButtons.forEach(b => {
+            outSeatButtons.forEach(b => {
                 b.classList.remove('btn-success', 'text-white');
                 if (b.dataset.seatClass === 'Thương gia') {
                     b.classList.add('btn-outline-warning', 'text-dark');
@@ -160,24 +259,152 @@
             this.classList.remove('btn-outline-primary', 'btn-outline-warning', 'text-dark');
             this.classList.add('btn-success', 'text-white');
 
-            const seatText = `${this.dataset.seatNumber} (${this.dataset.seatClass})`;
-            const priceText = `${parseInt(this.dataset.seatPrice).toLocaleString('vi-VN')} VNĐ`;
-
             outboundSeatInput.value = this.dataset.seatId;
-            selectedSeatLabel.textContent = seatText;
-            totalPriceLabel.textContent = priceText;
-            modalSeatSummary.textContent = seatText;
-            modalPriceSummary.textContent = priceText;
+            outPrice = parseInt(this.dataset.seatPrice);
+            outSeatText = `${this.dataset.seatNumber} (${this.dataset.seatClass})`;
+            outSeatLabel.textContent = outSeatText;
+            updateSummary();
         });
     });
 
-    openPassengerModalBtn.addEventListener('click', function () {
-        if (!outboundSeatInput.value) {
-            alert('Vui lòng chọn 1 ghế trống trước khi bấm Đặt vé!');
+    // --- BẬT / TẮT KHỨ HỒI ---
+    function syncRoundTripUI() {
+        const isRT = roundTripToggle.checked;
+        inboundSection.classList.toggle('d-none', !isRT);
+        inboundFlightSelect.required = isRT;
+        if (!isRT) {
+            inboundSeatInput.value = '';
+            inPrice = 0;
+            inSeatText = '';
+            inSeatLabel.textContent = 'Chưa chọn ghế';
+        }
+        updateSummary();
+    }
+
+    roundTripToggle.addEventListener('change', syncRoundTripUI);
+
+    // --- CHỌN CHUYẾN BAY CHIỀU VỀ & RENDER SƠ ĐỒ GHẾ CHIỀU VỀ ---
+    function renderInboundFlight(flightId) {
+        inboundSeatInput.value = '';
+        inPrice = 0;
+        inSeatText = '';
+        inSeatLabel.textContent = 'Chưa chọn ghế';
+        updateSummary();
+
+        selectedInboundFlight = RETURN_FLIGHTS.find(f => f.id === parseInt(flightId)) || null;
+        if (!selectedInboundFlight) {
+            inboundDetailsBox.classList.add('d-none');
+            inboundSegmentsList.innerHTML = '';
+            inboundSeatGrid.innerHTML = '';
             return;
         }
-        const modalEl = document.getElementById('passengerModal');
-        const passengerModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+        inboundSegmentsList.innerHTML = selectedInboundFlight.segments.map(s => `
+            <div class="small text-muted">
+                <span class="badge bg-secondary">Chặng ${s.sequence}</span>
+                <strong>${s.dep_name}</strong> → <strong>${s.arr_name}</strong>
+                (${s.dep_time} - ${s.arr_time})
+            </div>
+        `).join('');
+
+        inboundSeatGrid.innerHTML = '';
+        ALL_SEATS.forEach(seat => {
+            const isBooked = selectedInboundFlight.booked_seat_ids.includes(seat.id);
+            const seatClassLabel = seat.is_business ? 'Thương gia' : 'Phổ thông';
+            const seatPrice = Math.round(selectedInboundFlight.base_price * (seat.is_business ? BUS_MULT : ECO_MULT));
+
+            const col = document.createElement('div');
+            col.className = 'col-4 col-sm-3 col-md-2';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `btn w-100 py-2 in-seat-btn ${
+                isBooked
+                    ? 'btn-secondary disabled'
+                    : (seat.is_business ? 'btn-outline-warning text-dark' : 'btn-outline-primary')
+            }`;
+            if (isBooked) btn.disabled = true;
+
+            btn.innerHTML = `
+                <div class="fw-bold">${seat.seat_number}</div>
+                <div style="font-size: 0.72rem;">${isBooked ? 'Đã đặt' : seatPrice.toLocaleString('vi-VN') + 'đ'}</div>
+            `;
+
+            if (!isBooked) {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.in-seat-btn:not([disabled])').forEach(b => {
+                        b.classList.remove('btn-success', 'text-white');
+                        if (b.dataset.isBusiness === '1') {
+                            b.classList.add('btn-outline-warning', 'text-dark');
+                        } else {
+                            b.classList.add('btn-outline-primary');
+                        }
+                    });
+                    btn.classList.remove('btn-outline-primary', 'btn-outline-warning', 'text-dark');
+                    btn.classList.add('btn-success', 'text-white');
+
+                    inboundSeatInput.value = seat.id;
+                    inPrice = seatPrice;
+                    inSeatText = `${seat.seat_number} (${seatClassLabel})`;
+                    inSeatLabel.textContent = inSeatText;
+                    updateSummary();
+                });
+                btn.dataset.isBusiness = seat.is_business ? '1' : '0';
+            }
+
+            col.appendChild(btn);
+            inboundSeatGrid.appendChild(col);
+        });
+
+        inboundDetailsBox.classList.remove('d-none');
+    }
+
+    inboundFlightSelect.addEventListener('change', function () {
+        renderInboundFlight(this.value);
+    });
+
+    // Khởi tạo nếu có sẵn inbound_id từ URL
+    syncRoundTripUI();
+    if (inboundFlightSelect.value) {
+        renderInboundFlight(inboundFlightSelect.value);
+    }
+
+    // --- MỞ POPUP NHẬP THÔNG TIN HÀNH KHÁCH ---
+    document.getElementById('openPassengerModalBtn').addEventListener('click', function () {
+        if (!outboundSeatInput.value) {
+            alert('Vui lòng chọn 1 ghế trống cho chuyến bay chiều đi!');
+            return;
+        }
+
+        const isRT = roundTripToggle.checked;
+        if (isRT) {
+            if (!inboundFlightSelect.value) {
+                alert('Vui lòng chọn chuyến bay chiều về!');
+                return;
+            }
+            if (!inboundSeatInput.value) {
+                alert('Vui lòng chọn 1 ghế trống cho chuyến bay chiều về!');
+                return;
+            }
+        }
+
+        document.getElementById('modalOutSeat').textContent = outSeatText;
+        document.getElementById('modalOutPrice').textContent = `${outPrice.toLocaleString('vi-VN')} VNĐ`;
+
+        const modalInRow = document.getElementById('modalInRow');
+        if (isRT && selectedInboundFlight) {
+            modalInRow.classList.remove('d-none');
+            document.getElementById('modalInFlightCode').textContent = selectedInboundFlight.flight_code;
+            document.getElementById('modalInSeat').textContent = inSeatText;
+            document.getElementById('modalInPrice').textContent = `${inPrice.toLocaleString('vi-VN')} VNĐ`;
+        } else {
+            modalInRow.classList.add('d-none');
+        }
+
+        const total = outPrice + (isRT ? inPrice : 0);
+        document.getElementById('modalTotalPrice').textContent = `${total.toLocaleString('vi-VN')} VNĐ`;
+
+        const passengerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('passengerModal'));
         passengerModal.show();
     });
 </script>

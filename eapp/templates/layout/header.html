@@ -1,49 +1,128 @@
 <header>
-<nav class="navbar navbar-expand-sm bg-info">
-    <div class="container-fluid">
-        <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}" alt="Logo" width="90" class="ms-3 me-3">
-        <h3 style="color: yellow; font-size:40px; font-family: 'Times New Roman', Times, serif; padding-right: 50px">PlanePlan</h3>
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-                <a class="nav-link active text-white fw-semibold" aria-current="page" href="{{ url_for('home_view') }}">Trang chủ</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active text-white fw-semibold" aria-current="page" href="{{ url_for('staff_view') }}">Nhân viên</a>
-            </li>
-            <li class="d-flex">
-                <a class="nav-link active text-white fw-semibold" aria-current="page" href="#">Quản trị viên</a>
-            </li>
-            <li class="d-flex">
-                <a class="btn btn-outline-primary text-white btn-sm fw-semibold" aria-current="page" href="{{ url_for('flight_search') }}">Tìm kiếm chuyến bay</a>
-            </li>
-        </ul>
+    <style>
+        .planeplan-navbar {
+            background: linear-gradient(135deg, #0b4f8a 0%, #0288d1 60%, #00acc1 100%);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+        }
+        .planeplan-brand-text {
+            color: #ffd54f;
+            font-size: 32px;
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+        }
+        .planeplan-nav-link {
+            color: rgba(255, 255, 255, 0.92) !important;
+            font-weight: 600;
+            padding: 8px 14px !important;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+        }
+        .planeplan-nav-link:hover {
+            color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
+        }
+        .btn-search-flight {
+            background-color: #ffffff;
+            color: #0b4f8a;
+            font-weight: 700;
+            border: none;
+            border-radius: 999px;
+            padding: 7px 18px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s ease;
+        }
+        .btn-search-flight:hover {
+            background-color: #ffd54f;
+            color: #083763;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .user-pill-box {
+            background-color: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 999px;
+            padding: 5px 12px 5px 6px;
+        }
+    </style>
 
-        <!-- Phần người dùng và đăng nhập -->
-        <div class="ms-auto d-flex flex-column align-items-center">
-            {% if current_user.is_authenticated %}
-                <img src="{{ current_user.avatar or url_for('static', filename='user_account.png') }}"
-                     alt="User"
-                     width="45"
-                     height="45"
-                     class="rounded-circle mb-1"
-                     style="object-fit: cover;">
-                <span class="text-white fw-semibold small mb-1">
-                    Chào mừng, {{ current_user.name }}!
-                </span>
-                <a href="{{ url_for('logout_view') }}" class="btn btn-danger text-white btn-sm fw-semibold">
-                    Đăng xuất
-                </a>
-            {% else %}
-                <img src="{{ url_for('static', filename='user_account.png') }}"
-                     alt="User"
-                     width="45"
-                     class="rounded-circle mb-1">
-                <div class="d-flex align-items-center justify-content-center gap-2">
-                    <a href="{{ url_for('login_view') }}" class="btn btn-primary text-white btn-sm fw-semibold">Đăng nhập</a>
-                    <a href="{{ url_for('register_view') }}" class="btn btn-primary text-white btn-sm fw-semibold">Đăng ký</a>
+    <nav class="navbar navbar-expand-lg planeplan-navbar py-2">
+        <div class="container-fluid px-4">
+            <!-- Logo & Thương hiệu -->
+            <a class="navbar-brand d-flex align-items-center text-decoration-none me-4" href="{{ url_for('home_view') }}">
+                <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}"
+                     alt="Logo" width="58" class="me-2">
+                <span class="planeplan-brand-text">PlanePlan</span>
+            </a>
+
+            <!-- Nút thu gọn trên màn hình nhỏ -->
+            <button class="navbar-toggler border-light" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <!-- Menu điều hướng chính -->
+                <ul class="navbar-nav align-items-lg-center gap-1 me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link planeplan-nav-link" href="{{ url_for('home_view') }}">Trang chủ</a>
+                    </li>
+
+                    {% if current_user.is_authenticated and current_user.user_role.name in ['STAFF', 'ADMIN'] %}
+                    <li class="nav-item">
+                        <a class="nav-link planeplan-nav-link" href="{{ url_for('staff_view') }}">Nhân viên</a>
+                    </li>
+                    {% endif %}
+
+                    {% if current_user.is_authenticated and current_user.user_role.name == 'ADMIN' %}
+                    <li class="nav-item">
+                        <a class="nav-link planeplan-nav-link" href="{{ url_for('admin.index') }}">Quản trị viên</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
+                        <a class="btn btn-search-flight btn-sm" href="{{ url_for('flight_search') }}">
+                            Tìm kiếm chuyến bay
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Phần người dùng và đăng nhập -->
+                <div class="d-flex align-items-center gap-2">
+                    {% if current_user.is_authenticated %}
+                        <div class="user-pill-box d-flex align-items-center gap-2">
+                            <img src="{{ current_user.avatar or url_for('static', filename='user_account.png') }}"
+                                 alt="User"
+                                 width="36"
+                                 height="36"
+                                 class="rounded-circle border border-2 border-white"
+                                 style="object-fit: cover;">
+                            <span class="text-white fw-semibold small pe-1">
+                                Xin chào, {{ current_user.name }}
+                            </span>
+                            <a href="{{ url_for('logout_view') }}"
+                               class="btn btn-danger btn-sm rounded-pill fw-semibold px-3">
+                                Đăng xuất
+                            </a>
+                        </div>
+                    {% else %}
+                        <img src="{{ url_for('static', filename='user_account.png') }}"
+                             alt="User"
+                             width="36"
+                             height="36"
+                             class="rounded-circle border border-white me-1">
+                        <a href="{{ url_for('login_view') }}"
+                           class="btn btn-light text-primary btn-sm rounded-pill fw-bold px-3">
+                            Đăng nhập
+                        </a>
+                        <a href="{{ url_for('register_view') }}"
+                           class="btn btn-outline-light btn-sm rounded-pill fw-semibold px-3">
+                            Đăng ký
+                        </a>
+                    {% endif %}
                 </div>
-            {% endif %}
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
 </header>

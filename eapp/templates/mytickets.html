@@ -6,7 +6,7 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="text-primary fw-bold mb-0">VÉ ĐÃ ĐẶT CỦA TÔI</h3>
-        <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm">
+        <a href="{{ url_for('flight_page_view') }}" class="btn btn-primary btn-sm">
             + Đặt thêm vé mới
         </a>
     </div>
@@ -22,46 +22,66 @@
         {% endif %}
     {% endwith %}
 
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Mã vé</th>
-                        <th>Chuyến bay</th>
-                        <th>Tuyến bay</th>
-                        <th>Hành khách</th>
-                        <th>SĐT</th>
-                        <th>Ghế / Hạng ghế</th>
-                        <th>Giá vé</th>
-                        <th>Thời gian đặt</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in tickets %}
-                    <tr>
-                        <td class="fw-bold">#{{ t.id }}</td>
-                        <td class="fw-bold text-primary">{{ t.flight.flight_code }}</td>
-                        <td>{{ t.flight.flight_route.name }}</td>
-                        <td class="fw-semibold">{{ t.customer.name }}</td>
-                        <td>{{ t.customer.phone }}</td>
-                        <td>
-                            <strong>{{ t.seat.seat_number }}</strong>
-                            ({{ 'Thương gia' if t.seat.seat_class.name == 'BUSINESS' else 'Phổ thông' }})
-                        </td>
-                        <td class="fw-semibold text-success">{{ "{:,.0f}".format(t.price) }} VNĐ</td>
-                        <td>{{ t.booking_time.strftime('%d/%m/%Y %H:%M') }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
-                            Bạn chưa có vé nào. Hãy tìm kiếm chuyến bay và đặt vé ngay!
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    {% if tickets %}
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover table-bordered align-middle mb-0 bg-white">
+            <thead class="table-light">
+                <tr>
+                    <th>Mã vé</th>
+                    <th>Chuyến bay</th>
+                    <th>Tuyến bay</th>
+                    <th>Thời gian bay</th>
+                    <th>Hành khách</th>
+                    <th>SĐT</th>
+                    <th>Ghế / Hạng ghế</th>
+                    <th>Giá vé</th>
+                    <th>Thời gian đặt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td class="fw-bold">#{{ t.id }}</td>
+                    <td class="fw-bold text-primary">{{ t.flight.flight_code }}</td>
+                    <td>{{ t.flight.flight_route.name }}</td>
+                    <td>
+                        {% if t.ordered_segments %}
+                            {% set first_seg = t.ordered_segments[0] %}
+                            {% set last_seg = t.ordered_segments[-1] %}
+                            <div class="small">
+                                <span class="text-muted">Đi:</span>
+                                <strong>{{ first_seg.departure_time.strftime('%d/%m/%Y %H:%M') }}</strong>
+                            </div>
+                            <div class="small">
+                                <span class="text-muted">Đến:</span>
+                                <strong>{{ last_seg.arrival_time.strftime('%d/%m/%Y %H:%M') }}</strong>
+                            </div>
+                            {% if t.ordered_segments|length > 1 %}
+                            <span class="badge bg-info text-dark mt-1">
+                                {{ t.ordered_segments|length }} chặng bay
+                            </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted small">Chưa có lịch trình</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ t.customer.name }}</td>
+                    <td>{{ t.customer.phone }}</td>
+                    <td>
+                        <strong>{{ t.seat.seat_number }}</strong>
+                        ({{ 'Thương gia' if t.seat.seat_class.name == 'BUSINESS' else 'Phổ thông' }})
+                    </td>
+                    <td class="text-success fw-semibold">{{ "{:,.0f}".format(t.price) }} VNĐ</td>
+                    <td class="small text-muted">{{ t.booking_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% else %}
+    <div class="alert alert-info">
+        Bạn chưa đặt vé nào. <a href="{{ url_for('flight_page_view') }}" class="alert-link">Tìm chuyến bay ngay</a>.
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
