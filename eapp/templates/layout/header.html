@@ -89,8 +89,8 @@
 
                 <!-- Phần người dùng và đăng nhập -->
                 <div class="d-flex align-items-center gap-2">
-                    {% if current_user.is_authenticated %}
-                        <div class="user-pill-box d-flex align-items-center gap-2">
+                    <div class="user-pill-box d-flex align-items-center gap-2">
+                        {% if current_user.is_authenticated %}
                             <img src="{{ current_user.avatar or url_for('static', filename='user_account.png') }}"
                                  alt="User"
                                  width="36"
@@ -104,22 +104,23 @@
                                class="btn btn-danger btn-sm rounded-pill fw-semibold px-3">
                                 Đăng xuất
                             </a>
-                        </div>
-                    {% else %}
-                        <img src="{{ url_for('static', filename='user_account.png') }}"
-                             alt="User"
-                             width="36"
-                             height="36"
-                             class="rounded-circle border border-white me-1">
-                        <a href="{{ url_for('login_view') }}"
-                           class="btn btn-light text-primary btn-sm rounded-pill fw-bold px-3">
-                            Đăng nhập
-                        </a>
-                        <a href="{{ url_for('register_view') }}"
-                           class="btn btn-outline-light btn-sm rounded-pill fw-semibold px-3">
-                            Đăng ký
-                        </a>
-                    {% endif %}
+                        {% else %}
+                            <img src="{{ url_for('static', filename='user_account.png') }}"
+                                 alt="User"
+                                 width="36"
+                                 height="36"
+                                 class="rounded-circle border border-2 border-white"
+                                 style="object-fit: cover;">
+                            <a href="{{ url_for('login_view') }}"
+                               class="btn btn-light text-primary btn-sm rounded-pill fw-bold px-3">
+                                Đăng nhập
+                            </a>
+                            <a href="{{ url_for('register_view') }}"
+                               class="btn btn-outline-light btn-sm rounded-pill fw-semibold px-3">
+                                Đăng ký
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
