@@ -42,8 +42,8 @@
                 <!-- Logo & Tên hệ thống -->
                 <div class="col-md-6 d-flex align-items-center">
                     <a href="{{ url_for('home_view') }}" class="d-flex align-items-center text-decoration-none">
-                        <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}"
-                             alt="Logo" width="46" class="me-2">
+{#                        <img src="{{ url_for('static', filename='Logo1-removebg-preview.png') }}"#}
+{#                             alt="Logo" width="46" class="me-2">#}
                         <div>
                             <div class="planeplan-footer-brand lh-1">PlanePlan</div>
                             <small class="text-white-50">Hệ thống đặt vé & quản lý chuyến bay trực tuyến</small>
@@ -55,9 +55,6 @@
                 <div class="col-md-6 d-flex flex-wrap justify-content-md-end gap-2">
                     <a href="{{ url_for('home_view') }}" class="planeplan-footer-link small">Trang chủ</a>
                     <a href="{{ url_for('flight_search') }}" class="planeplan-footer-link small">Tìm kiếm chuyến bay</a>
-                    {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('my_tickets_view') }}" class="planeplan-footer-link small">Vé đã đặt</a>
-                    {% endif %}
                 </div>
             </div>
 
@@ -65,7 +62,7 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3"
                  style="border-top: 1px solid rgba(255, 255, 255, 0.2);">
                 <span class="small text-white-50">
-                    PlanePlan Website
+                    PlanePlan Website Since 2026
                 </span>
                 <span class="footer-group-badge small">
                     Nhóm 5 - HCMC-OU

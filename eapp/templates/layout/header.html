@@ -65,10 +65,9 @@
             <div class="collapse navbar-collapse" id="mainNavbar">
                 <!-- Menu điều hướng chính -->
                 <ul class="navbar-nav align-items-lg-center gap-1 me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link planeplan-nav-link" href="{{ url_for('home_view') }}">Trang chủ</a>
-                    </li>
-
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('my_tickets_view') }}" class="planeplan-footer-link small">Vé đã đặt</a>
+                    {% endif %}
                     {% if current_user.is_authenticated and current_user.user_role.name in ['STAFF', 'ADMIN'] %}
                     <li class="nav-item">
                         <a class="nav-link planeplan-nav-link" href="{{ url_for('staff_view') }}">Nhân viên</a>

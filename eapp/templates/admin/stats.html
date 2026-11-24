@@ -1,26 +1,30 @@
 {% extends 'admin/master.html' %}
-
 {% block body %}
 <div class="container-fluid py-3">
-    <!-- BỘ LỌC CHỌN THÁNG / NĂM -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-        <h3 class="text-primary font-weight-bold mb-0">THỐNG KÊ, BÁO CÁO DOANH THU</h3>
-        <form method="GET" class="form-inline d-flex align-items-center" style="gap: 10px;">
-            <label class="font-weight-bold mb-0">Chọn tháng:</label>
-            <select name="month" class="form-control">
-                {% for m in range(1, 13) %}
-                <option value="{{ m }}" {% if m == month %}selected{% endif %}>Tháng {{ m }}</option>
-                {% endfor %}
-            </select>
-            <label class="font-weight-bold mb-0">Năm:</label>
-            <input type="number" name="year" class="form-control" style="width: 100px;"
-                   value="{{ year }}" min="2020" max="2035">
-            <button type="submit" class="btn btn-primary">Xem báo cáo</button>
-        </form>
+
+    <!-- 1. FORM CHỌN THÁNG / NĂM (LUÔN HIỂN THỊ) -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="form-inline">
+                <label class="mr-2 font-weight-bold" for="month">Tháng:</label>
+                <select name="month" id="month" class="form-control mr-3">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>Tháng {{ m }}</option>
+                    {% endfor %}
+                </select>
+
+                <label class="mr-2 font-weight-bold" for="year">Năm:</label>
+                <input type="number" name="year" id="year" value="{{ year }}" class="form-control mr-3" style="width: 110px;" min="2000" max="2100">
+
+                <button type="submit" class="btn btn-primary">Xem thống kê</button>
+            </form>
+        </div>
     </div>
 
+    <!-- 2. KẾT QUẢ THỐNG KÊ HOẶC THÔNG BÁO (NẰM DƯỚI FORM) -->
+    {% if total_revenue > 0 %}
     <div class="row">
-        <!-- BẢNG BÁO CÁO DOANH THU THEO THÁNG ĐÚNG MẪU -->
+        <!-- BẢNG BÁO CÁO DOANH THU -->
         <div class="col-lg-6 mb-4">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover bg-white mb-0">
@@ -52,12 +56,6 @@
                             <td class="text-center">{{ item.flight_count }}</td>
                             <td class="text-center">{{ item.ratio }}%</td>
                         </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-3">
-                                Chưa có dữ liệu tuyến bay trong hệ thống.
-                            </td>
-                        </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot>
@@ -84,8 +82,17 @@
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="alert alert-warning text-center py-4 shadow-sm" role="alert">
+        <h5 class="mb-1">Không có dữ liệu thống kê</h5>
+        <p class="mb-0 text-muted">Chưa ghi nhận doanh thu hoặc lượt bay nào trong <strong>Tháng {{ month }}/{{ year }}</strong>.</p>
+    </div>
+    {% endif %}
+
 </div>
 
+<!-- 3. SCRIPT BIỂU ĐỒ (CHỈ CHẠY KHI CÓ DỮ LIỆU) -->
+{% if total_revenue > 0 %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('routeRevenueChart').getContext('2d');
@@ -136,4 +143,5 @@
         }
     });
 </script>
+{% endif %}
 {% endblock %}
