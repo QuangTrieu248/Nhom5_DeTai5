@@ -1,0 +1,147 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<div class="container-fluid py-3">
+
+    <!-- 1. FORM CHỌN THÁNG / NĂM (LUÔN HIỂN THỊ) -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="form-inline">
+                <label class="mr-2 font-weight-bold" for="month">Tháng:</label>
+                <select name="month" id="month" class="form-control mr-3">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>Tháng {{ m }}</option>
+                    {% endfor %}
+                </select>
+
+                <label class="mr-2 font-weight-bold" for="year">Năm:</label>
+                <input type="number" name="year" id="year" value="{{ year }}" class="form-control mr-3" style="width: 110px;" min="2000" max="2100">
+
+                <button type="submit" class="btn btn-primary">Xem thống kê</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. KẾT QUẢ THỐNG KÊ HOẶC THÔNG BÁO (NẰM DƯỚI FORM) -->
+    {% if total_revenue > 0 %}
+    <div class="row">
+        <!-- BẢNG BÁO CÁO DOANH THU -->
+        <div class="col-lg-6 mb-4">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover bg-white mb-0">
+                    <thead>
+                        <tr class="bg-primary text-white text-center">
+                            <th colspan="5" class="py-2" style="font-size: 1.1rem;">
+                                BÁO CÁO DOANH THU THEO THÁNG
+                            </th>
+                        </tr>
+                        <tr class="bg-light text-center">
+                            <th colspan="5" class="py-2">
+                                Tháng: <strong>{{ month }}</strong> (Năm {{ year }})
+                            </th>
+                        </tr>
+                        <tr class="thead-light text-center">
+                            <th style="width: 60px;">STT</th>
+                            <th>Tuyến bay</th>
+                            <th>Doanh thu</th>
+                            <th style="width: 115px;">Số lượt bay</th>
+                            <th style="width: 95px;">Tỷ lệ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in stats %}
+                        <tr>
+                            <td class="text-center">{{ loop.index }}</td>
+                            <td class="font-weight-bold">{{ item.route_name }}</td>
+                            <td class="text-right">{{ "{:,.0f}".format(item.revenue) }} VNĐ</td>
+                            <td class="text-center">{{ item.flight_count }}</td>
+                            <td class="text-center">{{ item.ratio }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-light font-weight-bold">
+                            <td colspan="5" class="py-2 px-3" style="font-size: 1.05rem;">
+                                Tổng doanh thu:
+                                <span class="text-danger ml-2">{{ "{:,.0f}".format(total_revenue) }} VNĐ</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- BIỂU ĐỒ CHART.JS -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white font-weight-bold">
+                    Biểu đồ doanh thu từng tuyến bay - Tháng {{ month }}/{{ year }}
+                </div>
+                <div class="card-body">
+                    <canvas id="routeRevenueChart" height="190"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning text-center py-4 shadow-sm" role="alert">
+        <h5 class="mb-1">Không có dữ liệu thống kê</h5>
+        <p class="mb-0 text-muted">Chưa ghi nhận doanh thu hoặc lượt bay nào trong <strong>Tháng {{ month }}/{{ year }}</strong>.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- 3. SCRIPT BIỂU ĐỒ (CHỈ CHẠY KHI CÓ DỮ LIỆU) -->
+{% if total_revenue > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('routeRevenueChart').getContext('2d');
+    const labels = [{% for item in stats %}{{ item.route_name | tojson }}{{ ',' if not loop.last }}{% endfor %}];
+    const revenues = [{% for item in stats %}{{ item.revenue }}{{ ',' if not loop.last }}{% endfor %}];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: revenues,
+                backgroundColor: [
+                    'rgba(13, 110, 253, 0.75)',
+                    'rgba(25, 135, 84, 0.75)',
+                    'rgba(255, 193, 7, 0.75)',
+                    'rgba(220, 53, 69, 0.75)',
+                    'rgba(13, 202, 240, 0.75)',
+                    'rgba(111, 66, 193, 0.75)'
+                ],
+                borderColor: [
+                    'rgba(13, 110, 253, 1)',
+                    'rgba(25, 135, 84, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(13, 202, 240, 1)',
+                    'rgba(111, 66, 193, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('vi-VN') + ' đ';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
