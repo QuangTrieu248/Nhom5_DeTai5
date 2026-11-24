@@ -1,13 +1,15 @@
-from flask_admin import Admin, AdminIndexView, expose
+from flask_admin import Admin, AdminIndexView, expose,BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user
 from flask import redirect, request
 from wtforms.validators import ValidationError
-from eapp import app, db
+from eapp import app, db, dao
 from eapp.models import (
     User, Airport, Airline, Airplane, FlightRoute,
     Flight, FlightSegment, Regulation, UserRole
 )
+from datetime import datetime
+
 
 
 class MyAdminIndexView(AdminIndexView):
@@ -82,6 +84,25 @@ admin = Admin(
     index_view=MyAdminIndexView()
 )
 
+class StatsView(BaseView):
+    @expose('/')
+    def index(self):
+        now = datetime.now()
+        month = request.args.get('month', default=now.month, type=int)
+        year = request.args.get('year', default=now.year, type=int)
+
+        stats, total_revenue = dao.get_monthly_route_stats(month=month, year=year)
+        return self.render(
+            'admin/stats.html',
+            month=month,
+            year=year,
+            stats=stats,
+            total_revenue=total_revenue
+        )
+
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.user_role == UserRole.ADMIN
+
 admin.add_view(AirportView(Airport, db.session, name='Sân bay', endpoint='airport'))
 admin.add_view(AuthenticatedModelView(Airline, db.session, name='Hãng bay', endpoint='airline'))
 admin.add_view(AuthenticatedModelView(Airplane, db.session, name='Máy bay', endpoint='airplane'))
@@ -90,3 +111,4 @@ admin.add_view(FlightView(Flight, db.session, name='Chuyến bay', endpoint='fli
 admin.add_view(AuthenticatedModelView(FlightSegment, db.session, name='Chặng bay', endpoint='flightsegment'))
 admin.add_view(RegulationView(Regulation, db.session, name='Quy định', endpoint='regulation'))
 admin.add_view(UserView(User, db.session, name='Người dùng', endpoint='user'))
+admin.add_view(StatsView(name='Thống kê doanh thu', endpoint='stats'))

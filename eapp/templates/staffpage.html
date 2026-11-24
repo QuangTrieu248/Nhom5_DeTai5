@@ -1,7 +1,402 @@
 {% extends 'layout/base.html' %}
 
-{% block title %}staff{% endblock %}
-
 {% block content %}
-<h1>chao mung nhan vien PlanePlan</h1>
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h3 class="text-primary fw-bold mb-0">NGHIỆP VỤ NHÂN VIÊN</h3>
+        {% if reg %}
+        <span class="badge bg-info text-dark p-2">
+            Tối đa {{ reg.max_intermediate_airports }} trạm dừng |
+            Bay tối thiểu {{ reg.min_flight_time }}p |
+            Dừng {{ reg.min_stop_time }}–{{ reg.max_stop_time }}p |
+            Bán vé tại quầy trước {{ reg.ticket_sale_deadline }}h
+        </span>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <ul class="nav nav-tabs mb-4" id="staffTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold" id="schedule-tab" data-bs-toggle="tab"
+                    data-bs-target="#schedule-pane" type="button" role="tab">
+                1. Lập lịch chuyến bay
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="ticket-tab" data-bs-toggle="tab"
+                    data-bs-target="#ticket-pane" type="button" role="tab">
+                2. Bán vé tại quầy
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="staffTabsContent">
+        <!-- TAB 1: LẬP LỊCH CHUYẾN BAY -->
+        <div class="tab-pane fade show active" id="schedule-pane" role="tabpanel">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    Thông tin chuyến bay mới
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('staff_view') }}" id="scheduleForm">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Mã chuyến bay <span class="text-danger">*</span></label>
+                                <input type="text" name="flight_code" class="form-control text-uppercase"
+                                       placeholder="VD: VN215" maxlength="10" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Hãng hàng không <span class="text-danger">*</span></label>
+                                <select name="airline_id" id="airlineSelect" class="form-select" required>
+                                    <option value="">-- Chọn hãng bay --</option>
+                                    {% for a in airlines %}
+                                    <option value="{{ a.id }}">{{ a.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Tuyến bay <span class="text-danger">*</span></label>
+                                <select name="flight_route_id" id="routeSelect" class="form-select" required disabled>
+                                    <option value="">-- Chọn hãng bay trước --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Giá vé cơ bản (VNĐ) <span class="text-danger">*</span></label>
+                                <input type="number" name="base_price" class="form-control"
+                                       min="100000" step="10000" placeholder="VD: 1500000" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="fw-bold mb-0">Chi tiết các chặng bay</h5>
+                            <button type="button" id="addStopBtn" class="btn btn-outline-primary btn-sm" disabled>
+                                + Thêm sân bay trung gian
+                            </button>
+                        </div>
+
+                        <div id="segmentsContainer"></div>
+
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-success px-4 fw-semibold">
+                                Lưu lịch chuyến bay
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-semibold">
+                    Danh sách chuyến bay hiện có ({{ scheduled_flights|length }})
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã CB</th>
+                                <th>Hãng bay</th>
+                                <th>Tuyến bay</th>
+                                <th>Giá cơ bản</th>
+                                <th>Chi tiết chặng bay & Thời gian</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in scheduled_flights %}
+                            <tr>
+                                <td class="fw-bold text-primary">{{ f.flight_code }}</td>
+                                <td>{{ f.airline_name }}</td>
+                                <td>{{ f.route_name }}</td>
+                                <td>{{ "{:,.0f}".format(f.base_price) }} đ</td>
+                                <td>
+                                    {% for s in f.segments %}
+                                    <div class="small {% if not loop.last %}mb-1 pb-1 border-bottom{% endif %}">
+                                        <span class="badge bg-secondary">Chặng {{ s.sequence }}</span>
+                                        <strong>{{ s.dep_name }}</strong> → <strong>{{ s.arr_name }}</strong>
+                                        | {{ s.departure_time.strftime('%d/%m/%Y %H:%M') }} – {{ s.arrival_time.strftime('%H:%M') }}
+                                        | <em>{{ s.airplane }}</em>
+                                    </div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">Chưa có chuyến bay nào được lập lịch.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: BÁN VÉ TẠI QUẦY -->
+        <div class="tab-pane fade" id="ticket-pane" role="tabpanel">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white fw-semibold">
+                    Xuất vé trực tiếp tại quầy
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('staff_sell_ticket_view') }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chọn chuyến bay <span class="text-danger">*</span></label>
+                                <select name="flight_id" id="counterFlightSelect" class="form-select" required>
+                                    <option value="">-- Chọn chuyến bay --</option>
+                                    {% for cf in counter_flights_data %}
+                                    <option value="{{ cf.id }}">{{ cf.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chọn ghế trống & Giá vé <span class="text-danger">*</span></label>
+                                <select name="seat_id" id="counterSeatSelect" class="form-select" required disabled>
+                                    <option value="">-- Chọn chuyến bay trước --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Họ và tên hành khách <span class="text-danger">*</span></label>
+                                <input type="text" name="passenger_name" class="form-control"
+                                       placeholder="VD: Nguyễn Văn A" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số điện thoại hành khách <span class="text-danger">*</span></label>
+                                <input type="text" name="passenger_phone" class="form-control"
+                                       placeholder="VD: 0912345678" maxlength="15" required>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-success px-4 fw-semibold">
+                                Xác nhận xuất vé
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-semibold">
+                    Danh sách vé đã xuất gần đây
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã vé</th>
+                                <th>Chuyến bay</th>
+                                <th>Ghế / Hạng</th>
+                                <th>Hành khách</th>
+                                <th>SĐT</th>
+                                <th>Giá vé</th>
+                                <th>Thời gian xuất</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in recent_tickets %}
+                            <tr>
+                                <td class="fw-bold">#{{ t.id }}</td>
+                                <td class="text-primary fw-semibold">{{ t.flight.flight_code }}</td>
+                                <td>{{ t.seat.seat_number }} ({{ 'Thương gia' if t.seat.seat_class.name == 'BUSINESS' else 'Phổ thông' }})</td>
+                                <td>{{ t.customer.name }}</td>
+                                <td>{{ t.customer.phone }}</td>
+                                <td class="fw-semibold text-success">{{ "{:,.0f}".format(t.price) }} đ</td>
+                                <td>{{ t.booking_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">Chưa có vé nào được bán.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ALL_ROUTES = {{ routes_data | tojson }};
+    const ALL_AIRPLANES = {{ airplanes_data | tojson }};
+    const ALL_AIRPORTS = [
+        {% for ap in airports %}
+        { id: {{ ap.id }}, name: {{ ap.name | tojson }} }{{ "," if not loop.last }}
+        {% endfor %}
+    ];
+    const COUNTER_FLIGHTS = {{ counter_flights_data | tojson }};
+    const MAX_INTERMEDIATE = {{ reg.max_intermediate_airports if reg else 2 }};
+
+    // --- TAB 1: LẬP LỊCH CHUYẾN BAY ---
+    const airlineSelect = document.getElementById('airlineSelect');
+    const routeSelect = document.getElementById('routeSelect');
+    const segmentsContainer = document.getElementById('segmentsContainer');
+    const addStopBtn = document.getElementById('addStopBtn');
+
+    let currentRoute = null;
+    let stopAirportIds = [];
+
+    airlineSelect.addEventListener('change', function () {
+        const airlineId = parseInt(this.value);
+        routeSelect.innerHTML = '<option value="">-- Chọn tuyến bay --</option>';
+        currentRoute = null;
+        stopAirportIds = [];
+        renderSegments();
+
+        if (!airlineId) {
+            routeSelect.disabled = true;
+            addStopBtn.disabled = true;
+            return;
+        }
+
+        ALL_ROUTES.filter(r => r.airline_id === airlineId).forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.id;
+            opt.textContent = `${r.name} (${r.dep_name} -> ${r.arr_name})`;
+            routeSelect.appendChild(opt);
+        });
+        routeSelect.disabled = false;
+    });
+
+    routeSelect.addEventListener('change', function () {
+        const routeId = parseInt(this.value);
+        currentRoute = ALL_ROUTES.find(r => r.id === routeId) || null;
+        stopAirportIds = [];
+        addStopBtn.disabled = !currentRoute || MAX_INTERMEDIATE <= 0;
+        renderSegments();
+    });
+
+    addStopBtn.addEventListener('click', function () {
+        if (!currentRoute || stopAirportIds.length >= MAX_INTERMEDIATE) return;
+        const candidate = ALL_AIRPORTS.find(
+            a => a.id !== currentRoute.dep_id && a.id !== currentRoute.arr_id && !stopAirportIds.includes(a.id)
+        );
+        stopAirportIds.push(candidate ? candidate.id : ALL_AIRPORTS[0].id);
+        renderSegments();
+    });
+
+    function removeStop(index) {
+        stopAirportIds.splice(index, 1);
+        renderSegments();
+    }
+
+    function changeStopAirport(index, newAirportId) {
+        stopAirportIds[index] = parseInt(newAirportId);
+        renderSegments();
+    }
+
+    function renderSegments() {
+        segmentsContainer.innerHTML = '';
+        if (!currentRoute) {
+            segmentsContainer.innerHTML = '<div class="text-muted fst-italic">Vui lòng chọn Hãng hàng không và Tuyến bay để thiết lập chặng bay.</div>';
+            return;
+        }
+
+        addStopBtn.disabled = stopAirportIds.length >= MAX_INTERMEDIATE;
+        const points = [currentRoute.dep_id, ...stopAirportIds, currentRoute.arr_id];
+        const airlineId = parseInt(airlineSelect.value);
+        const airlinePlanes = ALL_AIRPLANES.filter(p => p.airline_id === airlineId);
+
+        for (let i = 0; i < points.length - 1; i++) {
+            const depId = points[i];
+            const arrId = points[i + 1];
+            const depObj = ALL_AIRPORTS.find(a => a.id === depId);
+            const arrObj = ALL_AIRPORTS.find(a => a.id === arrId);
+            const isArrIntermediate = (i < points.length - 2);
+
+            let arrHtml = '';
+            if (isArrIntermediate) {
+                const options = ALL_AIRPORTS
+                    .filter(a => a.id !== currentRoute.dep_id && a.id !== currentRoute.arr_id)
+                    .map(a => `<option value="${a.id}" ${a.id === arrId ? 'selected' : ''}>${a.name}</option>`)
+                    .join('');
+                arrHtml = `<select name="arr_airport_id[]" class="form-select" onchange="changeStopAirport(${i}, this.value)" required>${options}</select>`;
+            } else {
+                arrHtml = `<input type="text" class="form-control bg-light" value="${arrObj ? arrObj.name : ''}" readonly>
+                           <input type="hidden" name="arr_airport_id[]" value="${arrId}">`;
+            }
+
+            const planeOptions = airlinePlanes.length
+                ? airlinePlanes.map(p => `<option value="${p.id}">${p.label}</option>`).join('')
+                : '<option value="">-- Hãng chưa có máy bay --</option>';
+
+            const removeBtn = isArrIntermediate
+                ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStop(${i})">Xóa trạm dừng này</button>`
+                : '';
+
+            const card = document.createElement('div');
+            card.className = 'card border-secondary mb-3';
+            card.innerHTML = `
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <span class="fw-bold text-primary">Chặng ${i + 1}</span>
+                    ${removeBtn}
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Sân bay đi</label>
+                            <input type="text" class="form-control bg-light" value="${depObj ? depObj.name : ''}" readonly>
+                            <input type="hidden" name="dep_airport_id[]" value="${depId}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sân bay đến ${isArrIntermediate ? '<span class="badge bg-warning text-dark">Trung gian</span>' : ''}</label>
+                            ${arrHtml}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Máy bay</label>
+                            <select name="airplane_id[]" class="form-select" required>${planeOptions}</select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Giờ khởi hành</label>
+                            <input type="datetime-local" name="departure_time[]" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Giờ hạ cánh</label>
+                            <input type="datetime-local" name="arrival_time[]" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+            `;
+            segmentsContainer.appendChild(card);
+        }
+    }
+
+    renderSegments();
+
+    // --- TAB 2: BÁN VÉ TẠI QUẦY ---
+    const counterFlightSelect = document.getElementById('counterFlightSelect');
+    const counterSeatSelect = document.getElementById('counterSeatSelect');
+
+    counterFlightSelect.addEventListener('change', function () {
+        const fId = parseInt(this.value);
+        counterSeatSelect.innerHTML = '<option value="">-- Chọn ghế trống --</option>';
+        if (!fId) {
+            counterSeatSelect.disabled = true;
+            return;
+        }
+        const flightObj = COUNTER_FLIGHTS.find(f => f.id === fId);
+        if (flightObj) {
+            flightObj.seats.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                if (s.is_booked) {
+                    opt.disabled = true;
+                    opt.textContent = `${s.seat_number} (${s.seat_class}) - ĐÃ ĐẶT`;
+                } else {
+                    opt.textContent = `${s.seat_number} (${s.seat_class}) - ${s.price.toLocaleString('vi-VN')} đ`;
+                }
+                counterSeatSelect.appendChild(opt);
+            });
+            counterSeatSelect.disabled = false;
+        }
+    });
+</script>
 {% endblock %}
